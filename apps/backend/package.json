@@ -11,7 +11,8 @@
     "test:ci": "jest --coverage",
     "typecheck": "tsc --noEmit",
     "prisma:generate": "sh -c 'set -a; . ../../.env; set +a; prisma generate'",
-    "prisma:migrate": "sh -c 'set -a; . ../../.env; set +a; prisma migrate dev'"
+    "prisma:migrate": "sh -c 'set -a; . ../../.env; set +a; prisma migrate dev'",
+    "prisma:migrate:deploy": "sh -c 'set -a; . ../../.env; set +a; prisma migrate deploy'"
   },
   "dependencies": {
     "@pulse/shared": "workspace:*",

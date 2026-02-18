@@ -1,6 +1,7 @@
 "use client";
 
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { ChartTooltip } from "@/components/charts/ChartTooltip";
 
 interface SessionsAreaChartProps {
   data: Array<{ date: string; sessions: number }>;
@@ -8,27 +9,20 @@ interface SessionsAreaChartProps {
 
 export function SessionsAreaChart({ data }: SessionsAreaChartProps): JSX.Element {
   return (
-    <section className="h-[320px] rounded-xl border border-border bg-surface p-4">
-      <h2 className="mb-3 font-syne text-xl font-bold text-text">Evolution sessions</h2>
+    <section className="glass h-[320px] rounded-2xl p-5">
+      <h2 className="mb-3 text-base font-semibold text-text">Evolution sessions</h2>
       <ResponsiveContainer width="100%" height="85%">
         <AreaChart data={data}>
           <defs>
             <linearGradient id="gaSessionsGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#34D399" stopOpacity={0.3} />
+              <stop offset="0%" stopColor="#34D399" stopOpacity={0.25} />
               <stop offset="100%" stopColor="#34D399" stopOpacity={0} />
             </linearGradient>
           </defs>
-          <CartesianGrid vertical={false} stroke="#1C1C2E" strokeDasharray="4 4" />
-          <XAxis dataKey="date" tickLine={false} axisLine={false} tick={{ fill: "#4A4A6A", fontSize: 11 }} />
-          <YAxis tickLine={false} axisLine={false} tick={{ fill: "#4A4A6A", fontSize: 11 }} />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: "rgba(14,14,26,0.95)",
-              border: "1px solid #252538",
-              borderRadius: 8,
-              padding: 12
-            }}
-          />
+          <CartesianGrid vertical={false} stroke="var(--chart-grid)" strokeDasharray="4 4" />
+          <XAxis dataKey="date" tickLine={false} axisLine={false} tick={{ fill: "var(--text-muted)", fontSize: 11 }} />
+          <YAxis tickLine={false} axisLine={false} tick={{ fill: "var(--text-muted)", fontSize: 11 }} />
+          <Tooltip content={<ChartTooltip />} />
           <Area
             type="monotone"
             dataKey="sessions"
@@ -36,7 +30,8 @@ export function SessionsAreaChart({ data }: SessionsAreaChartProps): JSX.Element
             fill="url(#gaSessionsGradient)"
             strokeWidth={2}
             isAnimationActive
-            animationDuration={800}
+            animationDuration={1000}
+            animationEasing="ease-out"
           />
         </AreaChart>
       </ResponsiveContainer>

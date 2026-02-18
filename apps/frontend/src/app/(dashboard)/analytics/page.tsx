@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Clock, MousePointerClick, UserPlus, Users } from "lucide-react";
 import { PageWrapper } from "@/components/layout/PageWrapper";
+import { KpiCard } from "@/components/ui/KpiCard";
 import { SessionsAreaChart } from "@/features/analytics/components/SessionsAreaChart";
 import { TopPagesTable } from "@/features/analytics/components/TopPagesTable";
 import { TrafficSourcesDonut } from "@/features/analytics/components/TrafficSourcesDonut";
 import { WorldTrafficMap } from "@/features/analytics/components/WorldTrafficMap";
 import { getGa4Stats, parsePeriod, toSessionsChartData, type Ga4StatsData, type Period } from "@/lib/api/analytics";
 import { cn } from "@/lib/utils/cn";
-import { formatNumber } from "@/lib/utils/formatNumber";
 
 const PERIODS: Period[] = ["7d", "30d", "90d"];
 
@@ -56,13 +57,13 @@ export default async function AnalyticsPage({
 
     return (
       <PageWrapper title="Web Analytics (GA4)">
-        <section className="rounded-xl border border-border bg-surface p-5">
-          <p className="text-sm text-text2">
-            Aucun `GA4 Property ID` détecté. Reconnecte Google avec ton identifiant de propriété GA4 pour activer cette vue.
+        <section className="glass rounded-2xl p-6">
+          <p className="text-sm text-text-2">
+            Aucun <code className="rounded bg-surface-hover px-1.5 py-0.5 font-mono text-xs text-accent">GA4 Property ID</code> détecté. Reconnecte Google avec ton identifiant de propriété GA4 pour activer cette vue.
           </p>
           <Link
             href="/login"
-            className="mt-4 inline-flex rounded-md border border-accent bg-accent/20 px-4 py-2 text-sm text-text transition hover:bg-accent/30"
+            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white shadow-glow-sm transition-all hover:bg-accent-hover hover:shadow-glow-accent"
           >
             Reconnecter Google
           </Link>
@@ -83,56 +84,77 @@ export default async function AnalyticsPage({
               key={periodOption}
               href={`/analytics?period=${periodOption}`}
               className={cn(
-                "rounded-full border px-3 py-1 text-xs font-medium transition-colors duration-150",
+                "rounded-full border px-4 py-1.5 text-xs font-semibold tracking-wide transition-all duration-200",
                 periodOption === period
-                  ? "border-accent bg-accent/20 text-text"
-                  : "border-border bg-surface text-text2 hover:border-border2"
+                  ? "border-accent bg-accent-muted text-accent shadow-glow-sm"
+                  : "border-border bg-surface text-text-2 hover:border-border-2 hover:text-text"
               )}
             >
               {periodOption.toUpperCase()}
             </Link>
           ))}
         </div>
-        <div className="text-right text-xs text-textMuted">
+        <div className="text-right text-xs text-text-muted">
           <p>Property ID: {stats.gaPropertyId}</p>
           <p>Dernière synchro: {new Date(stats.lastUpdatedAt).toLocaleString("fr-FR")}</p>
         </div>
       </section>
 
       {hasNoGaData ? (
-        <section className="rounded-xl border border-youtube/30 bg-youtube/10 p-4">
+        <section className="glass rounded-2xl border-youtube/20 p-4">
           <p className="text-sm text-youtube">
-            Aucune donnée détectée sur la période pour la propriété `GA4 {stats.gaPropertyId}`.
+            Aucune donnée détectée sur la période pour la propriété GA4 {stats.gaPropertyId}.
             Vérifie que c&apos;est la bonne propriété et qu&apos;elle reçoit bien du trafic.
           </p>
         </section>
       ) : null}
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <article className="rounded-xl border border-border bg-surface p-4" style={{ borderTop: "2px solid #34D399" }}>
-          <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-textMuted">Sessions ({period.toUpperCase()})</p>
-          <p className="mt-2 font-mono text-3xl text-text">{formatNumber(stats.sessions)}</p>
-          <p className={`mt-2 text-xs ${stats.sessionsDelta >= 0 ? "text-ga" : "text-youtube"}`}>{formatDelta(stats.sessionsDelta)}</p>
+        <KpiCard
+          label={`Sessions (${period.toUpperCase()})`}
+          value={stats.sessions}
+          delta={Number(stats.sessionsDelta.toFixed(1))}
+          accent="ga"
+          index={0}
+          icon={<Users size={18} />}
+        />
+        <KpiCard
+          label="Nouveaux utilisateurs"
+          value={stats.newUsers}
+          delta={Number(stats.newUsersDelta.toFixed(1))}
+          accent="ga"
+          index={1}
+          icon={<UserPlus size={18} />}
+        />
+        <article className="glass group relative overflow-hidden rounded-2xl p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover">
+          <div className="absolute left-0 top-0 h-full w-[3px] rounded-l-2xl bg-accent" />
+          <div className="relative flex items-start justify-between">
+            <div>
+              <p className="font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-text-muted">Taux de rebond</p>
+              <p className="mt-3 font-mono text-3xl font-semibold text-text">{formatPercentage(stats.bounceRate)}</p>
+              <p className={`mt-2 text-xs font-medium ${stats.bounceRateDelta <= 0 ? "text-ga" : "text-youtube"}`}>
+                {formatDelta(stats.bounceRateDelta)}
+              </p>
+            </div>
+            <div className="rounded-xl bg-accent-muted p-2 text-accent">
+              <MousePointerClick size={18} />
+            </div>
+          </div>
         </article>
-
-        <article className="rounded-xl border border-border bg-surface p-4" style={{ borderTop: "2px solid #A855F7" }}>
-          <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-textMuted">Nouveaux utilisateurs</p>
-          <p className="mt-2 font-mono text-3xl text-text">{formatNumber(stats.newUsers)}</p>
-          <p className={`mt-2 text-xs ${stats.newUsersDelta >= 0 ? "text-ga" : "text-youtube"}`}>{formatDelta(stats.newUsersDelta)}</p>
-        </article>
-
-        <article className="rounded-xl border border-border bg-surface p-4" style={{ borderTop: "2px solid #A855F7" }}>
-          <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-textMuted">Taux de rebond</p>
-          <p className="mt-2 font-mono text-3xl text-text">{formatPercentage(stats.bounceRate)}</p>
-          <p className={`mt-2 text-xs ${stats.bounceRateDelta <= 0 ? "text-ga" : "text-youtube"}`}>{formatDelta(stats.bounceRateDelta)}</p>
-        </article>
-
-        <article className="rounded-xl border border-border bg-surface p-4" style={{ borderTop: "2px solid #A855F7" }}>
-          <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-textMuted">Durée session moyenne</p>
-          <p className="mt-2 font-mono text-3xl text-text">{formatDuration(stats.averageSessionDuration)}</p>
-          <p className={`mt-2 text-xs ${stats.averageSessionDurationDelta >= 0 ? "text-ga" : "text-youtube"}`}>
-            {formatDelta(stats.averageSessionDurationDelta)}
-          </p>
+        <article className="glass group relative overflow-hidden rounded-2xl p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover">
+          <div className="absolute left-0 top-0 h-full w-[3px] rounded-l-2xl bg-accent" />
+          <div className="relative flex items-start justify-between">
+            <div>
+              <p className="font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-text-muted">Durée session moyenne</p>
+              <p className="mt-3 font-mono text-3xl font-semibold text-text">{formatDuration(stats.averageSessionDuration)}</p>
+              <p className={`mt-2 text-xs font-medium ${stats.averageSessionDurationDelta >= 0 ? "text-ga" : "text-youtube"}`}>
+                {formatDelta(stats.averageSessionDurationDelta)}
+              </p>
+            </div>
+            <div className="rounded-xl bg-accent-muted p-2 text-accent">
+              <Clock size={18} />
+            </div>
+          </div>
         </article>
       </section>
 

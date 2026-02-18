@@ -13,10 +13,13 @@ Pulse est un SaaS analytics multi-plateforme (YouTube + GA4) basé sur `Next.js 
 1. `npm i -g pnpm@9`
 2. `cp .env.example .env`
 3. `pnpm install`
-4. `pnpm infra:up`
-5. `pnpm prisma:generate`
-6. `pnpm db:migrate:init`
-7. `pnpm dev`
+4. `pnpm dev`
+
+`pnpm dev` lance automatiquement:
+- l'infra locale (Postgres + Redis),
+- la génération Prisma,
+- les migrations (`prisma migrate deploy`),
+- puis le backend + frontend en parallèle.
 
 ## Dépannage base locale
 

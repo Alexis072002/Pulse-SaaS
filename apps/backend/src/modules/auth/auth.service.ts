@@ -42,6 +42,7 @@ interface GoogleUserInfo {
 interface OAuthStatePayload {
   nonce: string;
   gaPropertyId?: string;
+  rememberMe?: boolean;
 }
 
 @Injectable()
@@ -62,11 +63,12 @@ export class AuthService {
     private readonly tokenCryptoService: TokenCryptoService
   ) {}
 
-  getGoogleAuthUrl(gaPropertyId?: string): string {
+  getGoogleAuthUrl(gaPropertyId?: string, rememberMe = false): string {
     const normalizedGaPropertyId = this.normalizeGaPropertyId(gaPropertyId);
     const state = this.encodeState({
       nonce: randomUUID(),
-      gaPropertyId: normalizedGaPropertyId || this.normalizeGaPropertyId(this.configService.get<string>("GOOGLE_GA4_PROPERTY_ID"))
+      gaPropertyId: normalizedGaPropertyId || this.normalizeGaPropertyId(this.configService.get<string>("GOOGLE_GA4_PROPERTY_ID")),
+      rememberMe
     });
 
     const params = new URLSearchParams({
@@ -86,7 +88,7 @@ export class AuthService {
   async handleGoogleCallback(
     code: string | undefined,
     state: string | undefined
-  ): Promise<{ jwt: string; userId: string; email: string }> {
+  ): Promise<{ jwt: string; userId: string; email: string; rememberMe: boolean }> {
     if (!code) {
       throw new BadRequestException("Missing OAuth code.");
     }
@@ -122,7 +124,8 @@ export class AuthService {
     return {
       jwt,
       userId: profile.id,
-      email: profile.email
+      email: profile.email,
+      rememberMe: statePayload?.rememberMe === true
     };
   }
 

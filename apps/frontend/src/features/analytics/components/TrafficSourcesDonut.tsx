@@ -4,8 +4,10 @@ import { useMemo, useState } from "react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import type { Ga4TrafficSource } from "@/lib/api/analytics";
 import { formatNumber } from "@/lib/utils/formatNumber";
+import { ChartTooltip } from "@/components/charts/ChartTooltip";
 
-const SOURCE_COLORS = ["#A855F7", "#8B5CF6", "#7C3AED", "#6D28D9", "#5B21B6", "#4C1D95"];
+// Updated to Richer Gold palette (Amber 600-900 range)
+const SOURCE_COLORS = ["#D97706", "#B45309", "#92400E", "#78350F", "#9A3412", "#7C2D12"];
 
 interface TrafficSourcesDonutProps {
   sources: Ga4TrafficSource[];
@@ -30,10 +32,10 @@ export function TrafficSourcesDonut({ sources }: TrafficSourcesDonutProps): JSX.
   );
 
   return (
-    <section className="rounded-xl border border-border bg-surface p-4">
-      <h2 className="mb-4 font-syne text-xl font-bold text-text">Sources de trafic</h2>
+    <section className="glass rounded-2xl p-5">
+      <h2 className="mb-4 text-base font-semibold text-text">Sources de trafic</h2>
       {chartData.length === 0 ? (
-        <p className="mb-4 text-sm text-text2">Aucune source détectée pour cette période.</p>
+        <p className="mb-4 text-sm text-text-2">Aucune source détectée pour cette période.</p>
       ) : null}
       <div className="grid gap-4 lg:grid-cols-[220px_1fr] lg:items-center">
         <div className="h-[220px]">
@@ -49,28 +51,25 @@ export function TrafficSourcesDonut({ sources }: TrafficSourcesDonutProps): JSX.
                 onMouseEnter={(_, index) => setActiveIndex(typeof index === "number" ? index : null)}
                 onMouseLeave={() => setActiveIndex(null)}
                 isAnimationActive
-                animationDuration={600}
+                animationDuration={1000} // Slower, smoother animation
+                animationEasing="ease-out"
               >
                 {chartData.map((entry, index) => (
                   <Cell
                     key={entry.name}
                     fill={SOURCE_COLORS[index % SOURCE_COLORS.length]}
-                    stroke={activeIndex === index ? "#F0F0FF" : "transparent"}
-                    strokeWidth={activeIndex === index ? 2 : 0}
+                    stroke={activeIndex === index ? "var(--text)" : "transparent"}
+                    strokeWidth={activeIndex === index ? 1 : 0}
                     style={{
-                      filter: activeIndex === index ? "brightness(1.15)" : "brightness(1)"
+                      filter: activeIndex === index ? "brightness(1.1)" : "brightness(1)",
+                      transition: "filter 0.3s ease"
                     }}
                   />
                 ))}
               </Pie>
               <Tooltip
                 formatter={(value: number) => [formatNumber(value), "Sessions"]}
-                contentStyle={{
-                  backgroundColor: "rgba(14,14,26,0.95)",
-                  border: "1px solid #252538",
-                  borderRadius: 8,
-                  padding: 12
-                }}
+                content={<ChartTooltip />}
               />
             </PieChart>
           </ResponsiveContainer>
@@ -78,7 +77,7 @@ export function TrafficSourcesDonut({ sources }: TrafficSourcesDonutProps): JSX.
 
         <div className="space-y-2">
           {chartData.map((entry, index) => (
-            <div key={entry.name} className="flex items-center justify-between rounded-lg border border-border bg-surface2 px-3 py-2">
+            <div key={entry.name} className="flex items-center justify-between rounded-xl border border-border bg-surface-hover px-3 py-2 transition-colors hover:bg-surface-2">
               <div className="flex min-w-0 items-center gap-2">
                 <span
                   className="inline-block h-2.5 w-2.5 shrink-0 rounded-full"
@@ -86,7 +85,7 @@ export function TrafficSourcesDonut({ sources }: TrafficSourcesDonutProps): JSX.
                 />
                 <p className="truncate text-sm text-text">{entry.name}</p>
               </div>
-              <p className="font-mono text-xs text-text2">{entry.share.toFixed(1)}%</p>
+              <p className="font-mono text-xs text-text-2">{entry.share.toFixed(1)}%</p>
             </div>
           ))}
         </div>

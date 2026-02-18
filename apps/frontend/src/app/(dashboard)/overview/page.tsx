@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Eye, TrendingUp, Users, Zap } from "lucide-react";
 import { CombinedPerformanceChart } from "@/components/charts/CombinedPerformanceChart";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { KpiCard } from "@/components/ui/KpiCard";
@@ -42,25 +43,29 @@ export default async function OverviewPage({
       label: `VUES YOUTUBE (${periodLabel})`,
       value: overview.youtubeViews,
       delta: overview.youtubeViewsDelta,
-      accent: "youtube" as const
+      accent: "youtube" as const,
+      icon: <Eye size={18} />
     },
     {
       label: `ABONNÉS GAGNÉS (${periodLabel})`,
       value: overview.subscribersGained,
       delta: overview.youtubeViewsDelta,
-      accent: "youtube" as const
+      accent: "youtube" as const,
+      icon: <Users size={18} />
     },
     {
       label: `SESSIONS WEB (${periodLabel})`,
       value: overview.webSessions,
       delta: overview.webSessionsDelta,
-      accent: "ga" as const
+      accent: "ga" as const,
+      icon: <TrendingUp size={18} />
     },
     {
       label: "PULSE SCORE",
       value: overview.pulseScore,
       delta: overview.pulseScoreDelta,
-      accent: "accent" as const
+      accent: "accent" as const,
+      icon: <Zap size={18} />
     }
   ];
 
@@ -72,10 +77,10 @@ export default async function OverviewPage({
             key={periodOption}
             href={`/overview?period=${periodOption}`}
             className={cn(
-              "rounded-full border px-3 py-1 text-xs font-medium transition-colors duration-150",
+              "rounded-full border px-4 py-1.5 text-xs font-semibold tracking-wide transition-all duration-200",
               periodOption === period
-                ? "border-accent bg-accent/20 text-text"
-                : "border-border bg-surface text-text2 hover:border-border2"
+                ? "border-accent bg-accent-muted text-accent shadow-glow-sm"
+                : "border-border bg-surface text-text-2 hover:border-border-2 hover:text-text"
             )}
           >
             {periodOption.toUpperCase()}
@@ -91,6 +96,7 @@ export default async function OverviewPage({
             delta={kpi.delta}
             accent={kpi.accent}
             index={index}
+            icon={kpi.icon}
           />
         ))}
       </section>

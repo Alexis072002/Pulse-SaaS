@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Ga4Country } from "@/lib/api/analytics";
+import { useUiStore } from "@/store/ui-store";
 
 interface WorldTrafficMapProps {
   countries: Ga4Country[];
@@ -85,6 +86,7 @@ function loadGoogleChartsScript(): Promise<void> {
 }
 
 export function WorldTrafficMap({ countries }: WorldTrafficMapProps): JSX.Element {
+  const { theme } = useUiStore();
   const chartRef = useRef<HTMLDivElement | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [hasError, setHasError] = useState(false);
@@ -135,6 +137,16 @@ export function WorldTrafficMap({ countries }: WorldTrafficMapProps): JSX.Elemen
       return;
     }
 
+    const styles = window.getComputedStyle(document.documentElement);
+    const textSecondary = styles.getPropertyValue("--text-2").trim() || "#4a5b7c";
+    const accent = styles.getPropertyValue("--accent").trim() || "#bc620f";
+
+    const datalessRegionColor = theme === "light" ? "rgba(15,23,42,0.07)" : "rgba(255,255,255,0.05)";
+    const defaultColor = theme === "light" ? "rgba(188,98,15,0.22)" : "rgba(217,119,6,0.18)";
+    const colorAxis = theme === "light"
+      ? ["rgba(188,98,15,0.22)", accent, "#8a460b"]
+      : ["rgba(217,119,6,0.22)", accent, "#8a460b"];
+
     const dataTable = new window.google.visualization.DataTable();
     dataTable.addColumn("string", "Country");
     dataTable.addColumn("number", "Sessions");
@@ -143,42 +155,42 @@ export function WorldTrafficMap({ countries }: WorldTrafficMapProps): JSX.Elemen
     const chart = new window.google.visualization.GeoChart(chartRef.current);
     chart.draw(dataTable, {
       backgroundColor: "transparent",
-      datalessRegionColor: "#14141F",
-      defaultColor: "#2A1E45",
+      datalessRegionColor,
+      defaultColor,
       colorAxis: {
-        colors: ["#2A1E45", "#7C3AED", "#A855F7"]
+        colors: colorAxis
       },
       legend: {
         textStyle: {
-          color: "#8888AA"
+          color: textSecondary
         }
       },
       tooltip: {
         textStyle: {
-          color: "#F0F0FF"
+          color: "#0F172A"
         }
       },
       keepAspectRatio: true
     });
-  }, [isReady, rows]);
+  }, [isReady, rows, theme]);
 
   return (
-    <section className="rounded-xl border border-border bg-surface p-4">
-      <h2 className="mb-4 font-syne text-xl font-bold text-text">Carte monde (sessions)</h2>
+    <section className="glass rounded-2xl p-5">
+      <h2 className="mb-4 text-base font-semibold text-text">Carte monde (sessions)</h2>
 
       {hasError ? (
-        <p className="text-sm text-text2">
-          Impossible de charger la carte mondiale. Vérifie l'accès réseau ou la politique de blocage de scripts.
+        <p className="text-sm text-text-2">
+          Impossible de charger la carte mondiale. Vérifie l&apos;accès réseau ou la politique de blocage de scripts.
         </p>
       ) : (
         <div
           ref={chartRef}
-          className="h-[380px] w-full overflow-hidden rounded-lg border border-border bg-surface2"
+          className="h-[380px] w-full overflow-hidden rounded-xl border border-border bg-surface"
         />
       )}
 
       {rows.length === 0 ? (
-        <p className="mt-3 text-sm text-text2">Aucune donnée pays exploitable pour la période sélectionnée.</p>
+        <p className="mt-3 text-sm text-text-2">Aucune donnée pays exploitable pour la période sélectionnée.</p>
       ) : null}
     </section>
   );

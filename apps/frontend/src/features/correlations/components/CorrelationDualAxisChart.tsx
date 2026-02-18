@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import type { CorrelationEvent } from "@/lib/api/correlations";
 import { formatNumber } from "@/lib/utils/formatNumber";
+import { ChartTooltip } from "@/components/charts/ChartTooltip";
 
 interface CorrelationDualAxisChartProps {
   data: Array<{
@@ -27,18 +28,18 @@ export function CorrelationDualAxisChart({ data, events }: CorrelationDualAxisCh
   const eventDateLabels = new Map(data.map((point) => [point.date, point.dateLabel]));
 
   return (
-    <section className="h-[380px] rounded-xl border border-border bg-surface p-4">
-      <h2 className="mb-3 font-syne text-xl font-bold text-text">YouTube vs Web (double axe)</h2>
+    <section className="glass h-[380px] rounded-2xl p-5">
+      <h2 className="mb-3 text-base font-semibold text-text">YouTube vs Web (double axe)</h2>
       <ResponsiveContainer width="100%" height="86%">
         <LineChart data={data}>
-          <CartesianGrid vertical={false} stroke="#1C1C2E" strokeDasharray="4 4" />
-          <XAxis dataKey="dateLabel" tickLine={false} axisLine={false} tick={{ fill: "#4A4A6A", fontSize: 11 }} />
+          <CartesianGrid vertical={false} stroke="var(--chart-grid)" strokeDasharray="4 4" />
+          <XAxis dataKey="dateLabel" tickLine={false} axisLine={false} tick={{ fill: "var(--text-muted)", fontSize: 11 }} />
           <YAxis
             yAxisId="youtube"
             orientation="left"
             tickLine={false}
             axisLine={false}
-            tick={{ fill: "#4A4A6A", fontSize: 11 }}
+            tick={{ fill: "var(--text-muted)", fontSize: 11 }}
             tickFormatter={(value: number) => formatNumber(value)}
           />
           <YAxis
@@ -46,21 +47,10 @@ export function CorrelationDualAxisChart({ data, events }: CorrelationDualAxisCh
             orientation="right"
             tickLine={false}
             axisLine={false}
-            tick={{ fill: "#4A4A6A", fontSize: 11 }}
+            tick={{ fill: "var(--text-muted)", fontSize: 11 }}
             tickFormatter={(value: number) => formatNumber(value)}
           />
-          <Tooltip
-            formatter={(value: number, name: string) => [
-              formatNumber(value),
-              name === "youtubeViews" ? "YouTube" : "Web"
-            ]}
-            contentStyle={{
-              backgroundColor: "rgba(14,14,26,0.95)",
-              border: "1px solid #252538",
-              borderRadius: 8,
-              padding: 12
-            }}
-          />
+          <Tooltip content={<ChartTooltip />} />
 
           {events.map((event) => {
             const dateLabel = eventDateLabels.get(event.date);
@@ -73,12 +63,12 @@ export function CorrelationDualAxisChart({ data, events }: CorrelationDualAxisCh
                 key={`${event.date}-${event.label}`}
                 x={dateLabel}
                 yAxisId="youtube"
-                stroke="#A855F7"
+                stroke="#D97706"
                 strokeDasharray="4 4"
                 label={{
                   value: event.label,
                   position: "insideTopRight",
-                  fill: "#A855F7",
+                  fill: "#D97706",
                   fontSize: 10
                 }}
               />
@@ -92,9 +82,10 @@ export function CorrelationDualAxisChart({ data, events }: CorrelationDualAxisCh
             stroke="#FF4444"
             strokeWidth={2}
             dot={false}
-            activeDot={{ r: 4, fill: "#FF4444", stroke: "#07070E", strokeWidth: 2 }}
+            activeDot={{ r: 4, fill: "#FF4444", stroke: "var(--bg)", strokeWidth: 2 }}
             isAnimationActive
-            animationDuration={800}
+            animationDuration={1500} // Slower for complex line chart
+            animationEasing="ease-out"
           />
           <Line
             yAxisId="web"
@@ -103,9 +94,10 @@ export function CorrelationDualAxisChart({ data, events }: CorrelationDualAxisCh
             stroke="#34D399"
             strokeWidth={2}
             dot={false}
-            activeDot={{ r: 4, fill: "#34D399", stroke: "#07070E", strokeWidth: 2 }}
+            activeDot={{ r: 4, fill: "#34D399", stroke: "var(--bg)", strokeWidth: 2 }}
             isAnimationActive
-            animationDuration={800}
+            animationDuration={1500}
+            animationEasing="ease-out"
           />
         </LineChart>
       </ResponsiveContainer>

@@ -16,9 +16,11 @@ export class AuthController {
   @Get("google")
   async googleRedirect(
     @Res() response: Response,
-    @Query("gaPropertyId") gaPropertyId?: string
+    @Query("gaPropertyId") gaPropertyId?: string,
+    @Query("rememberMe") rememberMeRaw?: string
   ): Promise<void> {
-    const url = this.authService.getGoogleAuthUrl(gaPropertyId);
+    const rememberMe = this.parseRememberMe(rememberMeRaw);
+    const url = this.authService.getGoogleAuthUrl(gaPropertyId, rememberMe);
     response.redirect(url);
   }
 
@@ -30,13 +32,13 @@ export class AuthController {
     @Query("state") state?: string
   ): Promise<void> {
     try {
-      const { jwt } = await this.authService.handleGoogleCallback(code, state);
-
+      const { jwt, rememberMe } = await this.authService.handleGoogleCallback(code, state);
+      const secure = this.configService.get<string>("NODE_ENV") === "production";
       response.cookie("pulse_access_token", jwt, {
         httpOnly: true,
-        secure: this.configService.get<string>("NODE_ENV") === "production",
+        secure,
         sameSite: "lax",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
+        maxAge: rememberMe ? 30 * 24 * 60 * 60 * 1000 : undefined,
         path: "/"
       });
 
@@ -57,12 +59,23 @@ export class AuthController {
       await this.authService.clearSession(user.id);
     }
 
+    const secure = this.configService.get<string>("NODE_ENV") === "production";
     response.clearCookie("pulse_access_token", {
       httpOnly: true,
+      secure,
       sameSite: "lax",
       path: "/"
     });
 
     return { message: "Logout successful" };
+  }
+
+  private parseRememberMe(raw: string | undefined): boolean {
+    if (!raw) {
+      return false;
+    }
+
+    const normalized = raw.trim().toLowerCase();
+    return normalized === "1" || normalized === "true" || normalized === "on" || normalized === "yes";
   }
 }
