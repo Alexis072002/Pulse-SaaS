@@ -1,7 +1,8 @@
+import type { ReactNode } from "react";
 import { cn } from "@/lib/utils/cn";
 
 interface BadgeProps {
-  children: React.ReactNode;
+  children: ReactNode;
   tone?: "neutral" | "positive" | "negative";
 }
 
