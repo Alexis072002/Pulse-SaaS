@@ -22,14 +22,37 @@ interface CorrelationDualAxisChartProps {
     webSessions: number;
   }>;
   events: CorrelationEvent[];
+  title?: string;
+  subtitle?: string;
 }
 
-export function CorrelationDualAxisChart({ data, events }: CorrelationDualAxisChartProps): JSX.Element {
+export function CorrelationDualAxisChart({
+  data,
+  events,
+  title = "YouTube vs Web (double axe)",
+  subtitle = "Evolution comparative des signaux multi-plateforme"
+}: CorrelationDualAxisChartProps): JSX.Element {
   const eventDateLabels = new Map(data.map((point) => [point.date, point.dateLabel]));
+  const labelledEventKeys = new Set(events.slice(0, 2).map((event) => `${event.date}-${event.label}`));
 
   return (
-    <section className="glass h-[380px] rounded-2xl p-5">
-      <h2 className="mb-3 text-base font-semibold text-text">YouTube vs Web (double axe)</h2>
+    <section className="glass h-[400px] rounded-2xl p-5">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold text-text">{title}</h2>
+          <p className="mt-1 text-xs text-text-2">{subtitle}</p>
+        </div>
+        <div className="flex items-center gap-3 text-[11px]">
+          <span className="inline-flex items-center gap-1.5 text-text-2">
+            <span className="h-2 w-2 rounded-full bg-youtube" />
+            YouTube
+          </span>
+          <span className="inline-flex items-center gap-1.5 text-text-2">
+            <span className="h-2 w-2 rounded-full bg-ga" />
+            Web
+          </span>
+        </div>
+      </div>
       <ResponsiveContainer width="100%" height="86%">
         <LineChart data={data}>
           <CartesianGrid vertical={false} stroke="var(--chart-grid)" strokeDasharray="4 4" />
@@ -65,12 +88,12 @@ export function CorrelationDualAxisChart({ data, events }: CorrelationDualAxisCh
                 yAxisId="youtube"
                 stroke="#D97706"
                 strokeDasharray="4 4"
-                label={{
+                label={labelledEventKeys.has(`${event.date}-${event.label}`) ? {
                   value: event.label,
                   position: "insideTopRight",
                   fill: "#D97706",
                   fontSize: 10
-                }}
+                } : undefined}
               />
             );
           })}
@@ -80,7 +103,7 @@ export function CorrelationDualAxisChart({ data, events }: CorrelationDualAxisCh
             type="monotone"
             dataKey="youtubeViews"
             stroke="#FF4444"
-            strokeWidth={2}
+            strokeWidth={2.25}
             dot={false}
             activeDot={{ r: 4, fill: "#FF4444", stroke: "var(--bg)", strokeWidth: 2 }}
             isAnimationActive
@@ -92,7 +115,7 @@ export function CorrelationDualAxisChart({ data, events }: CorrelationDualAxisCh
             type="monotone"
             dataKey="webSessions"
             stroke="#34D399"
-            strokeWidth={2}
+            strokeWidth={2.25}
             dot={false}
             activeDot={{ r: 4, fill: "#34D399", stroke: "var(--bg)", strokeWidth: 2 }}
             isAnimationActive
