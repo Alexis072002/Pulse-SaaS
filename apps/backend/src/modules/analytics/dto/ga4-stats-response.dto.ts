@@ -50,6 +50,9 @@ export class Ga4StatsDto {
   period!: Period;
 
   @Expose()
+  gaPropertyId!: string;
+
+  @Expose()
   sessions!: number;
 
   @Expose()

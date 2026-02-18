@@ -72,6 +72,7 @@ export default async function AnalyticsPage({
   }
 
   const sessionsChartData = toSessionsChartData(stats);
+  const hasNoGaData = stats.sessions === 0 && stats.topPages.length === 0 && stats.trafficSources.length === 0;
 
   return (
     <PageWrapper title="Web Analytics (GA4)">
@@ -92,10 +93,20 @@ export default async function AnalyticsPage({
             </Link>
           ))}
         </div>
-        <p className="text-xs text-textMuted">
-          Dernière synchro: {new Date(stats.lastUpdatedAt).toLocaleString("fr-FR")}
-        </p>
+        <div className="text-right text-xs text-textMuted">
+          <p>Property ID: {stats.gaPropertyId}</p>
+          <p>Dernière synchro: {new Date(stats.lastUpdatedAt).toLocaleString("fr-FR")}</p>
+        </div>
       </section>
+
+      {hasNoGaData ? (
+        <section className="rounded-xl border border-youtube/30 bg-youtube/10 p-4">
+          <p className="text-sm text-youtube">
+            Aucune donnée détectée sur la période pour la propriété `GA4 {stats.gaPropertyId}`.
+            Vérifie que c&apos;est la bonne propriété et qu&apos;elle reçoit bien du trafic.
+          </p>
+        </section>
+      ) : null}
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <article className="rounded-xl border border-border bg-surface p-4" style={{ borderTop: "2px solid #34D399" }}>

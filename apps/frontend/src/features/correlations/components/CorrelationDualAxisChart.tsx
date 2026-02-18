@@ -72,6 +72,7 @@ export function CorrelationDualAxisChart({ data, events }: CorrelationDualAxisCh
               <ReferenceLine
                 key={`${event.date}-${event.label}`}
                 x={dateLabel}
+                yAxisId="youtube"
                 stroke="#A855F7"
                 strokeDasharray="4 4"
                 label={{

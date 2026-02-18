@@ -303,6 +303,7 @@ export class AnalyticsService {
 
     return {
       period,
+      gaPropertyId,
       sessions,
       sessionsDelta: this.computeDelta(sessions, previousSessions),
       newUsers,

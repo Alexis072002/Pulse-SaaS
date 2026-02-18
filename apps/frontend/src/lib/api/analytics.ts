@@ -29,6 +29,7 @@ export interface Ga4Country {
 
 export interface Ga4StatsData {
   period: Period;
+  gaPropertyId: string;
   sessions: number;
   sessionsDelta: number;
   newUsers: number;
