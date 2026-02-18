@@ -1,6 +1,8 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
+import { APP_GUARD } from "@nestjs/core";
 import { ThrottlerModule } from "@nestjs/throttler";
+import { JwtAuthGuard } from "~/common/guards/jwt-auth.guard";
 import appConfig from "~/config/app.config";
 import databaseConfig from "~/config/database.config";
 import redisConfig from "~/config/redis.config";
@@ -29,6 +31,12 @@ import { ReportsModule } from "~/modules/reports/reports.module";
     ReportsModule,
     AiModule,
     QueueModule
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard
+    }
   ]
 })
 export class AppModule {}

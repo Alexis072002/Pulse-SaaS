@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DM_Mono, DM_Sans, Syne } from "next/font/google";
 import type { ReactNode } from "react";
+import { ThemeBootstrapper } from "@/components/layout/ThemeBootstrapper";
 import { TrpcProvider } from "@/lib/trpc/provider";
 import "@/app/globals.css";
 
@@ -17,7 +18,10 @@ export default function RootLayout({ children }: { children: ReactNode }): JSX.E
   return (
     <html lang="fr" data-theme="dark">
       <body className={`${syne.variable} ${dmSans.variable} ${dmMono.variable}`}>
-        <TrpcProvider>{children}</TrpcProvider>
+        <TrpcProvider>
+          <ThemeBootstrapper />
+          {children}
+        </TrpcProvider>
       </body>
     </html>
   );
