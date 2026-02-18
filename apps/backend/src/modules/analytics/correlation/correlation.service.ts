@@ -22,9 +22,10 @@ export class CorrelationService {
     let youtubeDenominator = 0;
     let webDenominator = 0;
 
-    for (let index = 0; index < points.length; index += 1) {
-      const ytCentered = youtubeValues[index] - youtubeMean;
-      const webCentered = webValues[index] - webMean;
+    for (const [index, youtubeValue] of youtubeValues.entries()) {
+      const webValue = webValues[index] ?? 0;
+      const ytCentered = youtubeValue - youtubeMean;
+      const webCentered = webValue - webMean;
 
       numerator += ytCentered * webCentered;
       youtubeDenominator += ytCentered ** 2;

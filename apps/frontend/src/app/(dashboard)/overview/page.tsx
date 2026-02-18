@@ -1,27 +1,74 @@
+import Link from "next/link";
 import { CombinedPerformanceChart } from "@/components/charts/CombinedPerformanceChart";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { KpiCard } from "@/components/ui/KpiCard";
+import { getOverviewData, toChartData, type Period } from "@/lib/api/overview";
+import { cn } from "@/lib/utils/cn";
 
-const kpis = [
-  { label: "VUES YOUTUBE (30J)", value: 28400, delta: 18.4, accent: "youtube" as const },
-  { label: "ABONNÉS GAGNÉS (30J)", value: 1120, delta: 11.2, accent: "youtube" as const },
-  { label: "SESSIONS WEB (30J)", value: 9120, delta: -7.2, accent: "ga" as const },
-  { label: "PULSE SCORE", value: 847, delta: -2, accent: "accent" as const }
-];
+const PERIODS: Period[] = ["7d", "30d", "90d"];
 
-const chartData = [
-  { date: "01/01", youtube: 320, ga: 110 },
-  { date: "02/01", youtube: 500, ga: 170 },
-  { date: "03/01", youtube: 430, ga: 160 },
-  { date: "04/01", youtube: 620, ga: 230 },
-  { date: "05/01", youtube: 700, ga: 280 },
-  { date: "06/01", youtube: 540, ga: 245 },
-  { date: "07/01", youtube: 810, ga: 330 }
-];
+function parsePeriod(period: string | undefined): Period {
+  if (period === "7d" || period === "90d") {
+    return period;
+  }
+  return "30d";
+}
 
-export default function OverviewPage(): JSX.Element {
+export default async function OverviewPage({
+  searchParams
+}: {
+  searchParams?: { period?: string };
+}): Promise<JSX.Element> {
+  const period = parsePeriod(searchParams?.period);
+  const overview = await getOverviewData(period);
+  const chartData = toChartData(overview);
+  const periodLabel = period.toUpperCase();
+
+  const kpis = [
+    {
+      label: `VUES YOUTUBE (${periodLabel})`,
+      value: overview.youtubeViews,
+      delta: overview.youtubeViewsDelta,
+      accent: "youtube" as const
+    },
+    {
+      label: `ABONNÉS GAGNÉS (${periodLabel})`,
+      value: overview.subscribersGained,
+      delta: overview.youtubeViewsDelta,
+      accent: "youtube" as const
+    },
+    {
+      label: `SESSIONS WEB (${periodLabel})`,
+      value: overview.webSessions,
+      delta: overview.webSessionsDelta,
+      accent: "ga" as const
+    },
+    {
+      label: "PULSE SCORE",
+      value: overview.pulseScore,
+      delta: overview.pulseScoreDelta,
+      accent: "accent" as const
+    }
+  ];
+
   return (
     <PageWrapper title="Overview">
+      <section className="flex items-center gap-2">
+        {PERIODS.map((periodOption) => (
+          <Link
+            key={periodOption}
+            href={`/overview?period=${periodOption}`}
+            className={cn(
+              "rounded-full border px-3 py-1 text-xs font-medium transition-colors duration-150",
+              periodOption === period
+                ? "border-accent bg-accent/20 text-text"
+                : "border-border bg-surface text-text2 hover:border-border2"
+            )}
+          >
+            {periodOption.toUpperCase()}
+          </Link>
+        ))}
+      </section>
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {kpis.map((kpi, index) => (
           <KpiCard

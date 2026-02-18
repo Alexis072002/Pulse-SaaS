@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { APP_GUARD } from "@nestjs/core";
 import { ThrottlerModule } from "@nestjs/throttler";
+import { resolve } from "node:path";
 import { JwtAuthGuard } from "~/common/guards/jwt-auth.guard";
 import appConfig from "~/config/app.config";
 import databaseConfig from "~/config/database.config";
@@ -17,6 +18,7 @@ import { ReportsModule } from "~/modules/reports/reports.module";
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: [resolve(process.cwd(), "../../.env"), resolve(process.cwd(), ".env")],
       load: [appConfig, databaseConfig, redisConfig],
       validationSchema
     }),

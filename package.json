@@ -8,11 +8,14 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "turbo run dev --parallel",
+    "dev": "turbo run dev --parallel --filter=@pulse/backend --filter=@pulse/frontend",
+    "dev:backend": "turbo run dev --filter=@pulse/backend",
+    "dev:frontend": "turbo run dev --filter=@pulse/frontend",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "test": "turbo run test",
-    "typecheck": "turbo run typecheck"
+    "typecheck": "turbo run typecheck",
+    "prisma:generate": "pnpm --filter @pulse/backend prisma:generate"
   },
   "devDependencies": {
     "turbo": "^2.4.2",

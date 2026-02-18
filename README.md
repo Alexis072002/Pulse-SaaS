@@ -10,10 +10,11 @@ Pulse est un SaaS analytics multi-plateforme (YouTube + GA4) basé sur `Next.js 
 
 ## Démarrage local
 
-1. `pnpm install`
+1. `npm i -g pnpm@9`
 2. `cp .env.example .env`
-3. `pnpm --filter @pulse/backend prisma:generate`
-4. `pnpm dev`
+3. `pnpm install`
+4. `pnpm prisma:generate`
+5. `pnpm dev`
 
 ## État actuel
 
@@ -29,4 +30,3 @@ Pulse est un SaaS analytics multi-plateforme (YouTube + GA4) basé sur `Next.js 
 3. Implémenter services YouTube/GA4 + persistance `AnalyticsSnapshot`.
 4. Connecter frontend au backend via tRPC et remplacer les données mock.
 5. Compléter les vues `YouTube`, `Analytics`, `Corrélations`, `Rapports` + tests TDD.
-
