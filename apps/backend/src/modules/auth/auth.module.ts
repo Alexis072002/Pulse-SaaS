@@ -2,9 +2,10 @@ import { Module } from "@nestjs/common";
 import { JwtModule } from "@nestjs/jwt";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { PassportModule } from "@nestjs/passport";
+import { TokenCryptoService } from "~/common/security/token-crypto.service";
 import { AuthController } from "~/modules/auth/auth.controller";
 import { AuthService } from "~/modules/auth/auth.service";
-import { GoogleStrategy } from "~/modules/auth/strategies/google.strategy";
+import { PrismaService } from "~/prisma/prisma.service";
 import { JwtStrategy } from "~/modules/auth/strategies/jwt.strategy";
 
 @Module({
@@ -22,7 +23,7 @@ import { JwtStrategy } from "~/modules/auth/strategies/jwt.strategy";
     })
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, GoogleStrategy],
+  providers: [AuthService, JwtStrategy, PrismaService, TokenCryptoService],
   exports: [AuthService]
 })
 export class AuthModule {}

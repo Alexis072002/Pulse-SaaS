@@ -8,6 +8,11 @@
     "packages/*"
   ],
   "scripts": {
+    "infra:up": "bash scripts/infra-up.sh",
+    "infra:down": "bash scripts/infra-down.sh",
+    "infra:logs": "bash scripts/infra-logs.sh",
+    "db:migrate": "pnpm --filter @pulse/backend prisma:migrate",
+    "db:migrate:init": "pnpm --filter @pulse/backend prisma:migrate -- --name init",
     "dev": "turbo run dev --parallel --filter=@pulse/backend --filter=@pulse/frontend",
     "dev:backend": "turbo run dev --filter=@pulse/backend",
     "dev:frontend": "turbo run dev --filter=@pulse/frontend",

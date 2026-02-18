@@ -1,8 +1,9 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { CombinedPerformanceChart } from "@/components/charts/CombinedPerformanceChart";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { KpiCard } from "@/components/ui/KpiCard";
-import { getOverviewData, toChartData, type Period } from "@/lib/api/overview";
+import { getOverviewData, toChartData, type OverviewData, type Period } from "@/lib/api/overview";
 import { cn } from "@/lib/utils/cn";
 
 const PERIODS: Period[] = ["7d", "30d", "90d"];
@@ -20,7 +21,19 @@ export default async function OverviewPage({
   searchParams?: { period?: string };
 }): Promise<JSX.Element> {
   const period = parsePeriod(searchParams?.period);
-  const overview = await getOverviewData(period);
+  let overview: OverviewData;
+  try {
+    overview = await getOverviewData(period);
+  } catch (error) {
+    if (error instanceof Error && error.message === "UNAUTHENTICATED") {
+      redirect("/login");
+    }
+    throw error;
+  }
+
+  if (!overview) {
+    redirect("/login");
+  }
   const chartData = toChartData(overview);
   const periodLabel = period.toUpperCase();
 

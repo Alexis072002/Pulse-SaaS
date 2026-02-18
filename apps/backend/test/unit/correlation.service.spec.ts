@@ -22,4 +22,23 @@ describe("CorrelationService", () => {
 
     expect(score).toBeGreaterThan(0.8);
   });
+
+  it("should detect lag when web follows youtube", () => {
+    const result = service.findBestLag([
+      { youtubeViews: 100, webSessions: 10 },
+      { youtubeViews: 200, webSessions: 20 },
+      { youtubeViews: 300, webSessions: 100 },
+      { youtubeViews: 400, webSessions: 200 },
+      { youtubeViews: 500, webSessions: 300 }
+    ], 3);
+
+    expect(result.lagDays).toBe(2);
+    expect(result.score).toBeGreaterThan(0.95);
+  });
+
+  it("should produce a readable insight", () => {
+    const insight = service.buildInsight(0.76, 2);
+    expect(insight).toContain("YouTube");
+    expect(insight).toContain("2");
+  });
 });
