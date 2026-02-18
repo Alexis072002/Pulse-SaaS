@@ -17,7 +17,12 @@ export function TopPagesTable({ pages }: TopPagesTableProps): JSX.Element {
 
   return (
     <section className="glass rounded-2xl p-5">
-      <h2 className="mb-4 text-base font-semibold text-text">Top pages</h2>
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold text-text">Top pages</h2>
+          <p className="mt-1 text-xs text-text-2">Pages qui concentrent le trafic qualifié.</p>
+        </div>
+      </div>
       {pages.length === 0 ? (
         <p className="text-sm text-text-2">Aucune donnée page disponible pour la période sélectionnée.</p>
       ) : null}
@@ -27,8 +32,9 @@ export function TopPagesTable({ pages }: TopPagesTableProps): JSX.Element {
 
           return (
             <article key={`${page.pagePath}-${index}`} className="rounded-xl border border-border bg-surface-hover p-3 transition-colors hover:bg-surface-2">
-              <div className="flex items-start justify-between gap-3">
-                <p className="truncate text-sm font-medium text-text">{page.pagePath}</p>
+              <div className="grid grid-cols-[26px_minmax(0,1fr)_auto] items-start gap-3">
+                <span className="font-mono text-xs text-text-muted">{String(index + 1).padStart(2, "0")}</span>
+                <p className="truncate text-sm font-medium text-text">{page.pagePath || "/"}</p>
                 <p className="shrink-0 font-mono text-xs text-text-2">{formatNumber(page.sessions)} sessions</p>
               </div>
 
@@ -36,9 +42,9 @@ export function TopPagesTable({ pages }: TopPagesTableProps): JSX.Element {
                 <div className="h-full rounded-full bg-accent transition-all duration-500" style={{ width: `${ratio}%` }} />
               </div>
 
-              <div className="mt-2 flex items-center justify-between text-xs text-text-muted">
+              <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-text-muted">
                 <span>{formatNumber(page.pageViews)} pages vues</span>
-                <span>{formatDuration(page.averageSessionDuration)} durée moyenne</span>
+                <span className="text-right">{formatDuration(page.averageSessionDuration)} durée moyenne</span>
               </div>
             </article>
           );

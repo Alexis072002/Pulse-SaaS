@@ -19,15 +19,36 @@ interface ChartPoint {
 
 interface CombinedPerformanceChartProps {
   data: ChartPoint[];
+  title?: string;
+  subtitle?: string;
 }
 
-export function CombinedPerformanceChart({ data }: CombinedPerformanceChartProps): JSX.Element {
+export function CombinedPerformanceChart({
+  data,
+  title = "Performance combinée",
+  subtitle = "Comparaison YouTube vs sessions web sur la période"
+}: CombinedPerformanceChartProps): JSX.Element {
   return (
-    <div className="glass h-[360px] rounded-2xl p-5">
-      <p className="mb-4 font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-text-muted">
-        Performance combinée
-      </p>
-      <ResponsiveContainer width="100%" height="90%">
+    <div className="glass h-[390px] rounded-2xl p-5">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <p className="font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-text-muted">
+            {title}
+          </p>
+          <p className="mt-1 text-xs text-text-2">{subtitle}</p>
+        </div>
+        <div className="flex items-center gap-3 text-[11px]">
+          <span className="inline-flex items-center gap-1.5 text-text-2">
+            <span className="h-2 w-2 rounded-full bg-youtube" />
+            YouTube
+          </span>
+          <span className="inline-flex items-center gap-1.5 text-text-2">
+            <span className="h-2 w-2 rounded-full bg-ga" />
+            Web
+          </span>
+        </div>
+      </div>
+      <ResponsiveContainer width="100%" height="87%">
         <AreaChart data={data}>
           <defs>
             <linearGradient id="ytGradient" x1="0" y1="0" x2="0" y2="1">
