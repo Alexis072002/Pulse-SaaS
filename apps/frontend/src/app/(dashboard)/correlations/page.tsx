@@ -1,13 +1,22 @@
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { redirect } from "next/navigation";
 import { Activity, BrainCircuit, CalendarClock, Timer, TrendingUp } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { PageWrapper } from "@/components/layout/PageWrapper";
-import { CorrelationDualAxisChart } from "@/features/correlations/components/CorrelationDualAxisChart";
+import { ChartPanelSkeleton } from "@/components/charts/ChartPanelSkeleton";
 import { getCorrelations, parsePeriod, toChartData, type CorrelationData, type Period } from "@/lib/api/correlations";
 import { cn } from "@/lib/utils/cn";
 
 const PERIODS: Period[] = ["7d", "30d", "90d"];
+
+const CorrelationDualAxisChart = dynamic(
+  () => import("@/features/correlations/components/CorrelationDualAxisChart").then((module) => module.CorrelationDualAxisChart),
+  {
+    ssr: false,
+    loading: () => <ChartPanelSkeleton heightClass="h-[400px]" />
+  }
+);
 
 interface CorrelationMetricCardProps {
   label: string;

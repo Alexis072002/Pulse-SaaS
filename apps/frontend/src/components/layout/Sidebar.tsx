@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BrainCircuit,
@@ -11,20 +10,21 @@ import {
   FileText,
   Globe2,
   Home,
+  Settings2,
   Youtube,
   User2
 } from "lucide-react";
+import type { WorkspaceBadgeInfo } from "@/components/layout/DashboardShell";
 import { cn } from "@/lib/utils/cn";
 import { useUiStore } from "@/store/ui-store";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 const items = [
   { href: "/overview", label: "Overview", icon: Home },
   { href: "/youtube", label: "YouTube", icon: Youtube },
   { href: "/analytics", label: "Analytics", icon: Globe2 },
   { href: "/correlations", label: "Corrélations", icon: BrainCircuit },
-  { href: "/reports", label: "Rapports", icon: FileText }
+  { href: "/reports", label: "Rapports", icon: FileText },
+  { href: "/workspace", label: "Workspace", icon: Settings2 }
 ] as const;
 
 function PulseLogo({ collapsed }: { collapsed: boolean }): JSX.Element {
@@ -51,44 +51,9 @@ function PulseLogo({ collapsed }: { collapsed: boolean }): JSX.Element {
   );
 }
 
-export function Sidebar(): JSX.Element {
+export function Sidebar({ workspace }: { workspace: WorkspaceBadgeInfo | null }): JSX.Element {
   const pathname = usePathname();
   const { sidebarCollapsed, toggleSidebar } = useUiStore();
-  const [workspace, setWorkspace] = useState<{ name: string; role: string } | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    void fetch(`${API_URL}/workspace/context`, {
-      credentials: "include"
-    })
-      .then(async (response) => {
-        if (!response.ok) {
-          return null;
-        }
-        const payload = (await response.json()) as {
-          success?: boolean;
-          data?: { workspaceName?: string; role?: string };
-        };
-        if (!payload.success || !payload.data?.workspaceName || !payload.data.role) {
-          return null;
-        }
-        return {
-          name: payload.data.workspaceName,
-          role: payload.data.role
-        };
-      })
-      .then((data) => {
-        if (!active || !data) {
-          return;
-        }
-        setWorkspace(data);
-      })
-      .catch(() => undefined);
-
-    return () => {
-      active = false;
-    };
-  }, []);
 
   return (
     <aside

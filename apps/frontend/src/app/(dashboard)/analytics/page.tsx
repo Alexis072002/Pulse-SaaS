@@ -1,17 +1,40 @@
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { redirect } from "next/navigation";
 import { Globe2, MousePointerClick, Timer, UserPlus, Users } from "lucide-react";
+import { ChartPanelSkeleton } from "@/components/charts/ChartPanelSkeleton";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { Badge } from "@/components/ui/Badge";
-import { SessionsAreaChart } from "@/features/analytics/components/SessionsAreaChart";
 import { TopPagesTable } from "@/features/analytics/components/TopPagesTable";
-import { TrafficSourcesDonut } from "@/features/analytics/components/TrafficSourcesDonut";
-import { WorldTrafficMap } from "@/features/analytics/components/WorldTrafficMap";
 import { getGa4Stats, parsePeriod, toSessionsChartData, type Ga4StatsData, type Period } from "@/lib/api/analytics";
 import { formatNumber } from "@/lib/utils/formatNumber";
 import { cn } from "@/lib/utils/cn";
 
 const PERIODS: Period[] = ["7d", "30d", "90d"];
+
+const SessionsAreaChart = dynamic(
+  () => import("@/features/analytics/components/SessionsAreaChart").then((module) => module.SessionsAreaChart),
+  {
+    ssr: false,
+    loading: () => <ChartPanelSkeleton heightClass="h-[360px]" />
+  }
+);
+
+const TrafficSourcesDonut = dynamic(
+  () => import("@/features/analytics/components/TrafficSourcesDonut").then((module) => module.TrafficSourcesDonut),
+  {
+    ssr: false,
+    loading: () => <ChartPanelSkeleton heightClass="h-[340px]" />
+  }
+);
+
+const WorldTrafficMap = dynamic(
+  () => import("@/features/analytics/components/WorldTrafficMap").then((module) => module.WorldTrafficMap),
+  {
+    ssr: false,
+    loading: () => <ChartPanelSkeleton heightClass="h-[430px]" />
+  }
+);
 
 type Tone = "ga" | "accent" | "youtube";
 

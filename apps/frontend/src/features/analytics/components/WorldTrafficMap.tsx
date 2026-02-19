@@ -87,7 +87,9 @@ function loadGoogleChartsScript(): Promise<void> {
 
 export function WorldTrafficMap({ countries }: WorldTrafficMapProps): JSX.Element {
   const { theme } = useUiStore();
+  const sectionRef = useRef<HTMLElement | null>(null);
   const chartRef = useRef<HTMLDivElement | null>(null);
+  const [isVisible, setIsVisible] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [hasError, setHasError] = useState(false);
 
@@ -99,7 +101,30 @@ export function WorldTrafficMap({ countries }: WorldTrafficMapProps): JSX.Elemen
   );
 
   useEffect(() => {
+    if (!sectionRef.current) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0]?.isIntersecting) {
+          return;
+        }
+        setIsVisible(true);
+        observer.disconnect();
+      },
+      { rootMargin: "240px 0px" }
+    );
+
+    observer.observe(sectionRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
+    if (!isVisible) {
+      return;
+    }
 
     const initialize = async (): Promise<void> => {
       try {
@@ -130,7 +155,7 @@ export function WorldTrafficMap({ countries }: WorldTrafficMapProps): JSX.Elemen
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isVisible]);
 
   useEffect(() => {
     if (!isReady || !chartRef.current || !window.google?.visualization) {
@@ -175,13 +200,15 @@ export function WorldTrafficMap({ countries }: WorldTrafficMapProps): JSX.Elemen
   }, [isReady, rows, theme]);
 
   return (
-    <section className="glass rounded-2xl p-5">
+    <section ref={sectionRef} className="glass rounded-2xl p-5">
       <h2 className="mb-4 text-base font-semibold text-text">Carte monde (sessions)</h2>
 
       {hasError ? (
         <p className="text-sm text-text-2">
           Impossible de charger la carte mondiale. Vérifie l&apos;accès réseau ou la politique de blocage de scripts.
         </p>
+      ) : !isVisible ? (
+        <div className="h-[380px] w-full rounded-xl border border-border bg-surface-2" />
       ) : (
         <div
           ref={chartRef}

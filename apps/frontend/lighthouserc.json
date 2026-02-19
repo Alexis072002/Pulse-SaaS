@@ -1,12 +1,17 @@
 {
   "ci": {
     "collect": {
-      "numberOfRuns": 2,
+      "numberOfRuns": 3,
       "startServerCommand": "pnpm --filter @pulse/frontend build && pnpm --filter @pulse/frontend start -- -p 3000",
       "startServerReadyPattern": "Ready",
       "url": [
         "http://localhost:3000/",
-        "http://localhost:3000/login"
+        "http://localhost:3000/login",
+        "http://localhost:3000/overview",
+        "http://localhost:3000/youtube",
+        "http://localhost:3000/analytics",
+        "http://localhost:3000/reports",
+        "http://localhost:3000/workspace"
       ],
       "settings": {
         "preset": "desktop"
@@ -30,6 +35,14 @@
         "largest-contentful-paint": [
           "warn",
           { "maxNumericValue": 3000 }
+        ],
+        "total-byte-weight": [
+          "warn",
+          { "maxNumericValue": 550000 }
+        ],
+        "unused-javascript": [
+          "warn",
+          { "maxNumericValue": 180000 }
         ]
       }
     },

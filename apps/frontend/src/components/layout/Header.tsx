@@ -1,51 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Bell, LogOut, Moon, Search, Sun } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
+import type { WorkspaceBadgeInfo } from "@/components/layout/DashboardShell";
 import { useUiStore } from "@/store/ui-store";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
-export function Header(): JSX.Element {
+export function Header({ workspace }: { workspace: WorkspaceBadgeInfo | null }): JSX.Element {
   const { theme, setTheme } = useUiStore();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [workspace, setWorkspace] = useState<{ name: string; role: string } | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    void fetch(`${API_URL}/workspace/context`, {
-      credentials: "include"
-    })
-      .then(async (response) => {
-        if (!response.ok) {
-          return null;
-        }
-        const payload = (await response.json()) as {
-          success?: boolean;
-          data?: { workspaceName?: string; role?: string };
-        };
-        if (!payload.success || !payload.data?.workspaceName || !payload.data.role) {
-          return null;
-        }
-        return {
-          name: payload.data.workspaceName,
-          role: payload.data.role
-        };
-      })
-      .then((data) => {
-        if (!active || !data) {
-          return;
-        }
-        setWorkspace(data);
-      })
-      .catch(() => undefined);
-
-    return () => {
-      active = false;
-    };
-  }, []);
 
   const toggleTheme = (): void => {
     const nextTheme = theme === "dark" ? "light" : "dark";
@@ -121,9 +88,13 @@ export function Header(): JSX.Element {
             {workspace?.role ?? "viewer"}
           </p>
         </div>
-        <button className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/15 text-xs font-semibold text-accent transition-all hover:bg-accent/25">
+        <Link
+          href="/workspace"
+          aria-label="Ouvrir la gestion du workspace"
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/15 text-xs font-semibold text-accent transition-all hover:bg-accent/25"
+        >
           {workspace?.name?.slice(0, 1).toUpperCase() ?? "W"}
-        </button>
+        </Link>
         <button
           onClick={logout}
           disabled={isLoggingOut}

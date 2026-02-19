@@ -1,10 +1,11 @@
 import Link from "next/link";
+import dynamic from "next/dynamic";
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { Activity, CalendarClock, Gauge, TrendingUp, Users, Video } from "lucide-react";
+import { ChartPanelSkeleton } from "@/components/charts/ChartPanelSkeleton";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { HeatmapCalendar } from "@/features/youtube/components/HeatmapCalendar";
-import { RetentionGauge } from "@/features/youtube/components/RetentionGauge";
-import { SubscribersAreaChart } from "@/features/youtube/components/SubscribersAreaChart";
 import { TopVideosList } from "@/features/youtube/components/TopVideosList";
 import { getYoutubeStats, parsePeriod, type Period, type YoutubeStatsData } from "@/lib/api/youtube";
 import { formatNumber } from "@/lib/utils/formatNumber";
@@ -12,6 +13,22 @@ import { cn } from "@/lib/utils/cn";
 
 
 const PERIODS: Period[] = ["7d", "30d", "90d"];
+
+const SubscribersAreaChart = dynamic(
+  () => import("@/features/youtube/components/SubscribersAreaChart").then((module) => module.SubscribersAreaChart),
+  {
+    ssr: false,
+    loading: () => <ChartPanelSkeleton heightClass="h-[360px]" />
+  }
+);
+
+const RetentionGauge = dynamic(
+  () => import("@/features/youtube/components/RetentionGauge").then((module) => module.RetentionGauge),
+  {
+    ssr: false,
+    loading: () => <ChartPanelSkeleton heightClass="h-[360px]" />
+  }
+);
 
 interface MetricTileProps {
   label: string;
@@ -131,12 +148,13 @@ export default async function YoutubePage({
           <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted">Spotlight vidéo</p>
           {topVideo ? (
             <div className="mt-3 space-y-3">
-              <img
+              <Image
                 src={topVideo.thumbnailUrl}
                 alt={topVideo.title}
                 width={640}
                 height={360}
                 className="h-40 w-full rounded-xl border border-border object-cover"
+                sizes="(max-width: 640px) 100vw, 42vw"
                 loading="lazy"
               />
               <h3 className="max-h-[3rem] overflow-hidden text-base font-semibold leading-snug text-text">{topVideo.title}</h3>

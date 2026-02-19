@@ -1,7 +1,8 @@
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { redirect } from "next/navigation";
 import { Activity, Eye, Gauge, TrendingUp, Users, Zap, type LucideIcon } from "lucide-react";
-import { CombinedPerformanceChart } from "@/components/charts/CombinedPerformanceChart";
+import { ChartPanelSkeleton } from "@/components/charts/ChartPanelSkeleton";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { Badge } from "@/components/ui/Badge";
 import { getOverviewData, toChartData, type OverviewData, type Period } from "@/lib/api/overview";
@@ -9,6 +10,14 @@ import { formatNumber } from "@/lib/utils/formatNumber";
 import { cn } from "@/lib/utils/cn";
 
 const PERIODS: Period[] = ["7d", "30d", "90d"];
+
+const CombinedPerformanceChart = dynamic(
+  () => import("@/components/charts/CombinedPerformanceChart").then((module) => module.CombinedPerformanceChart),
+  {
+    ssr: false,
+    loading: () => <ChartPanelSkeleton heightClass="h-[390px]" />
+  }
+);
 
 type Tone = "youtube" | "ga" | "accent";
 

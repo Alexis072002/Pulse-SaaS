@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { YoutubeTopVideo } from "@/lib/api/youtube";
 import { formatNumber } from "@/lib/utils/formatNumber";
 
@@ -53,12 +54,13 @@ export function TopVideosList({ videos }: TopVideosListProps): JSX.Element {
             className="grid grid-cols-1 gap-3 rounded-xl border border-border bg-surface-hover p-3 transition-colors hover:bg-surface-2 md:grid-cols-[30px_96px_minmax(0,1fr)_126px] md:items-center"
           >
             <span className="font-mono text-xs text-text-muted md:text-sm">{String(index + 1).padStart(2, "0")}</span>
-            <img
+            <Image
               src={video.thumbnailUrl}
               alt={video.title}
               width={192}
               height={108}
               className="h-14 w-24 rounded-lg border border-border object-cover md:h-16 md:w-24"
+              sizes="96px"
               loading="lazy"
             />
             <div className="min-w-0 space-y-1">
