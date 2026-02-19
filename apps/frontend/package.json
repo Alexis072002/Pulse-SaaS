@@ -10,7 +10,7 @@
     "lint": "next lint",
     "test": "vitest run --passWithNoTests",
     "typecheck": "tsc --noEmit",
-    "perf:lighthouse": "lhci autorun --config=./lighthouserc.json"
+    "perf:lighthouse": "NODE_ENV=production pnpm build && NODE_ENV=production lhci autorun --config=./lighthouserc.json"
   },
   "dependencies": {
     "@pulse/shared": "workspace:*",

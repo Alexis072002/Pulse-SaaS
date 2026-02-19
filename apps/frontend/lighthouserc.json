@@ -2,8 +2,9 @@
   "ci": {
     "collect": {
       "numberOfRuns": 3,
-      "startServerCommand": "pnpm --filter @pulse/frontend build && pnpm --filter @pulse/frontend start -- -p 3000",
+      "startServerCommand": "NODE_ENV=production pnpm exec next start -p 3000",
       "startServerReadyPattern": "Ready",
+      "startServerReadyTimeout": 180000,
       "url": [
         "http://localhost:3000/",
         "http://localhost:3000/login",
