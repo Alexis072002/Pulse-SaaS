@@ -1,20 +1,19 @@
 "use client";
 
+import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { useUiStore } from "@/store/ui-store";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 function PulseLogo(): JSX.Element {
+  const { theme } = useUiStore();
+  const logoSrc = theme === "dark" ? "/logos/pulse-logo-dark.svg" : "/logos/pulse-logo-light.svg";
+
   return (
-    <div className="flex items-center justify-center gap-3">
-      <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/15">
-        <span className="text-xl font-bold text-accent">P</span>
-        <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-accent animate-pulse-dot" />
-      </div>
-      <span className="text-2xl font-bold text-text">
-        puls<span className="text-accent">e</span>
-      </span>
+    <div className="flex items-center justify-center">
+      <Image src={logoSrc} alt="Pulse Analytics" width={180} height={48} className="h-11 w-auto" priority />
     </div>
   );
 }
@@ -67,7 +66,11 @@ export default function LoginPage({
             />
             <span>Se souvenir de moi</span>
           </label>
-          <Button className="w-full gap-3" type="submit" size="lg">
+          <Button
+            className="w-full gap-3 border border-transparent bg-[linear-gradient(96deg,var(--accent)_0%,var(--warning)_48%,var(--danger)_100%)] shadow-glow-sm hover:brightness-105 hover:shadow-glow-accent"
+            type="submit"
+            size="lg"
+          >
             <svg className="h-5 w-5" viewBox="0 0 24 24">
               <path
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"

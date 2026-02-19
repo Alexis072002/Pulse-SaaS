@@ -3,16 +3,18 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { animate, motion, useInView, useScroll, useTransform } from "framer-motion";
+import { AnimatePresence, animate, motion, useInView, useScroll, useTransform } from "framer-motion";
 import {
   ArrowRight,
   BarChart3,
   BrainCircuit,
   CheckCircle2,
   Globe2,
+  Menu,
   Moon,
   Shield,
   Sun,
+  X,
   Zap,
   type LucideIcon
 } from "lucide-react";
@@ -186,6 +188,7 @@ function AnimatedStat({ item, index }: { item: StatItem; index: number }): JSX.E
 export default function LandingPage(): JSX.Element {
   const { scrollY } = useScroll();
   const { theme, setTheme } = useUiStore();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const auraOffset = useTransform(scrollY, [0, 700], [0, 68]);
   const logoSrc = theme === "dark" ? "/logos/pulse-logo-dark.svg" : "/logos/pulse-logo-light.svg";
   const toggleTheme = (): void => {
@@ -195,11 +198,32 @@ export default function LandingPage(): JSX.Element {
     window.localStorage.setItem("pulse-theme", nextTheme);
   };
 
+  useEffect(() => {
+    if (!mobileMenuOpen) {
+      return;
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [mobileMenuOpen]);
+
   return (
     <div className="relative min-h-screen bg-bg">
       <nav className="fixed left-0 right-0 top-0 z-50 flex items-center justify-between border-b border-border bg-bg/80 px-6 py-4 backdrop-blur-md md:px-12">
         <Image src={logoSrc} alt="Pulse Analytics" width={132} height={35} className="h-8 w-auto" priority />
-        <div className="flex items-center gap-3">
+        <div className="hidden items-center gap-3 md:flex">
           <button
             onClick={toggleTheme}
             aria-label={theme === "dark" ? "Activer le mode clair" : "Activer le mode sombre"}
@@ -226,6 +250,76 @@ export default function LandingPage(): JSX.Element {
             </Button>
           </Link>
         </div>
+
+        <div className="flex items-center gap-2 md:hidden">
+          <button
+            onClick={toggleTheme}
+            aria-label={theme === "dark" ? "Activer le mode clair" : "Activer le mode sombre"}
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-surface/70 text-text-2 transition-colors hover:border-warning/45 hover:bg-warning/10 hover:text-text"
+          >
+            {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
+          <button
+            onClick={() => setMobileMenuOpen((open) => !open)}
+            aria-label={mobileMenuOpen ? "Fermer le menu" : "Ouvrir le menu"}
+            aria-expanded={mobileMenuOpen}
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-surface/70 text-text transition-colors hover:border-warning/45 hover:bg-warning/10"
+          >
+            {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
+          </button>
+        </div>
+
+        <AnimatePresence>
+          {mobileMenuOpen ? (
+            <>
+              <motion.button
+                aria-label="Fermer le menu"
+                className="fixed inset-0 top-[65px] z-40 bg-bg/60 md:hidden"
+                onClick={() => setMobileMenuOpen(false)}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              />
+              <motion.div
+                initial={{ opacity: 0, y: -8, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -8, scale: 0.98 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                className="absolute right-4 top-[calc(100%+0.5rem)] z-50 w-[min(20rem,calc(100vw-2rem))] rounded-2xl border border-border bg-surface/95 p-3 shadow-glass backdrop-blur-xl md:hidden"
+              >
+                <div className="flex flex-col gap-2">
+                  <Link href="#features" onClick={() => setMobileMenuOpen(false)}>
+                    <Button
+                      variant="ghost"
+                      size="md"
+                      className="h-11 w-full justify-center border border-warning/35 bg-surface/80 text-sm text-text hover:border-danger/45 hover:bg-warning/10 hover:text-text"
+                    >
+                      Voir le produit
+                    </Button>
+                  </Link>
+                  <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
+                    <Button
+                      variant="ghost"
+                      size="md"
+                      className="h-11 w-full justify-center border border-border bg-surface/80 text-sm text-text-2 hover:border-warning/45 hover:bg-warning/10 hover:text-text"
+                    >
+                      Connexion
+                    </Button>
+                  </Link>
+                  <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
+                    <Button
+                      size="md"
+                      className="h-11 w-full justify-center border border-transparent bg-[linear-gradient(96deg,var(--accent)_0%,var(--warning)_48%,var(--danger)_100%)] text-sm shadow-glow-sm hover:brightness-105 hover:shadow-glow-accent"
+                    >
+                      Commencer
+                      <ArrowRight size={14} />
+                    </Button>
+                  </Link>
+                </div>
+              </motion.div>
+            </>
+          ) : null}
+        </AnimatePresence>
       </nav>
 
       <section className="relative isolate flex min-h-[92vh] items-center overflow-hidden px-6 pb-16 pt-28 text-center md:pb-20">
