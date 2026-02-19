@@ -21,7 +21,7 @@ function Sparkline({ points }: { points: number[] }): JSX.Element {
     <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="rounded-md bg-surface">
       <polyline
         fill="none"
-        stroke="#FF4444"
+        stroke="var(--danger)"
         strokeWidth="1.75"
         strokeLinecap="round"
         strokeLinejoin="round"

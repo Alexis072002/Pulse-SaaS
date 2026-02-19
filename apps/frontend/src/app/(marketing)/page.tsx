@@ -10,7 +10,6 @@ import {
   CheckCircle2,
   Globe2,
   Shield,
-  Sparkles,
   Zap,
   type LucideIcon
 } from "lucide-react";
@@ -198,12 +197,19 @@ export default function LandingPage(): JSX.Element {
         </div>
         <div className="flex items-center gap-3">
           <Link href="/login">
-            <Button variant="ghost" size="sm" className="hover:bg-accent/5 hover:text-accent">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="border border-border bg-surface/70 text-text-2 hover:border-warning/45 hover:bg-warning/10 hover:text-text"
+            >
               Connexion
             </Button>
           </Link>
           <Link href="/login">
-            <Button size="sm" className="shadow-glow-sm hover:shadow-glow-accent">
+            <Button
+              size="sm"
+              className="border border-transparent bg-[linear-gradient(96deg,var(--accent)_0%,var(--warning)_48%,var(--danger)_100%)] shadow-glow-sm hover:brightness-105 hover:shadow-glow-accent"
+            >
               Commencer
               <ArrowRight size={14} />
             </Button>
@@ -218,7 +224,7 @@ export default function LandingPage(): JSX.Element {
         />
         <motion.div
           style={{ y: auraOffset }}
-          className="pointer-events-none absolute -right-16 top-24 h-[340px] w-[340px] rounded-full bg-ga/15 blur-[95px]"
+          className="pointer-events-none absolute -right-16 top-24 h-[340px] w-[340px] rounded-full bg-youtube/15 blur-[95px]"
         />
         <InteractiveSignalMesh className="opacity-[0.82]" />
 
@@ -228,20 +234,12 @@ export default function LandingPage(): JSX.Element {
           variants={container}
           className="relative z-10 mx-auto w-full max-w-5xl"
         >
-          <motion.div
-            variants={reveal}
-            className="mb-7 inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/10 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-accent"
-          >
-            <Sparkles size={12} />
-            SaaS Analytics Product-Led
-          </motion.div>
-
           <motion.h1
             variants={reveal}
             className="mx-auto max-w-4xl text-4xl font-extrabold leading-[0.95] tracking-[-0.03em] text-text sm:text-5xl md:text-6xl lg:text-7xl"
           >
             Comprends ton audience.
-            <span className="mt-2 block bg-gradient-to-r from-accent via-amber-200 to-accent bg-clip-text text-transparent">
+            <span className="mt-2 block bg-[linear-gradient(98deg,var(--accent)_0%,var(--warning)_48%,var(--danger)_100%)] bg-clip-text text-transparent">
               Amplifie ta croissance.
             </span>
           </motion.h1>
@@ -253,13 +251,20 @@ export default function LandingPage(): JSX.Element {
 
           <motion.div variants={reveal} className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link href="/login">
-              <Button size="lg" className="h-14 min-w-[258px] px-8 text-[15px] shadow-glow-accent">
+              <Button
+                size="lg"
+                className="h-14 min-w-[258px] border border-transparent bg-[linear-gradient(98deg,var(--accent)_0%,var(--warning)_48%,var(--danger)_100%)] px-8 text-[15px] shadow-glow-accent hover:brightness-105"
+              >
                 Commencer gratuitement
                 <ArrowRight size={18} />
               </Button>
             </Link>
             <Link href="#features">
-              <Button variant="ghost" size="lg" className="h-14 min-w-[160px] px-6 text-[15px]">
+              <Button
+                variant="ghost"
+                size="lg"
+                className="h-14 min-w-[160px] border border-warning/35 bg-surface/80 px-6 text-[15px] text-text hover:border-danger/45 hover:bg-warning/10 hover:text-text"
+              >
                 Voir le produit
               </Button>
             </Link>
@@ -318,13 +323,20 @@ export default function LandingPage(): JSX.Element {
 
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row lg:flex-col">
                   <Link href="/login">
-                    <Button size="lg" className="h-14 w-full text-[15px] shadow-glow-accent">
+                    <Button
+                      size="lg"
+                      className="h-14 w-full border border-transparent bg-[linear-gradient(98deg,var(--accent)_0%,var(--warning)_48%,var(--danger)_100%)] text-[15px] shadow-glow-accent hover:brightness-105"
+                    >
                       Commencer gratuitement
                       <ArrowRight size={18} />
                     </Button>
                   </Link>
                   <Link href="/overview">
-                    <Button variant="ghost" size="lg" className="h-14 w-full text-[15px]">
+                    <Button
+                      variant="ghost"
+                      size="lg"
+                      className="h-14 w-full border border-warning/35 bg-surface/80 text-[15px] text-text hover:border-danger/45 hover:bg-warning/10 hover:text-text"
+                    >
                       Voir le dashboard
                     </Button>
                   </Link>
@@ -569,7 +581,7 @@ export default function LandingPage(): JSX.Element {
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             className="relative overflow-hidden rounded-[2.2rem] border border-border bg-surface/70 backdrop-blur-xl"
           >
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_20%,var(--accent-muted),transparent_45%),radial-gradient(circle_at_90%_80%,rgba(52,211,153,0.1),transparent_42%)]" />
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_20%,var(--accent-muted),transparent_45%),radial-gradient(circle_at_90%_80%,rgba(239,68,68,0.11),transparent_42%)]" />
             <div className="relative grid md:grid-cols-[1.618fr_1fr]">
               <div className="px-7 py-10 md:px-12 md:py-14">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-accent">Passage en action</p>
@@ -582,11 +594,11 @@ export default function LandingPage(): JSX.Element {
                 </p>
                 <div className="mt-7 flex flex-wrap items-center gap-4 text-xs text-text-2">
                   <span className="inline-flex items-center gap-1.5">
-                    <CheckCircle2 size={14} className="text-ga" />
+                    <CheckCircle2 size={14} className="text-warning" />
                     Setup guidé
                   </span>
                   <span className="inline-flex items-center gap-1.5">
-                    <CheckCircle2 size={14} className="text-ga" />
+                    <CheckCircle2 size={14} className="text-danger" />
                     Connexion OAuth sécurisée
                   </span>
                 </div>
@@ -596,13 +608,20 @@ export default function LandingPage(): JSX.Element {
                 <p className="text-sm text-text-2">Commence maintenant et visualise tes premiers signaux en temps réel.</p>
                 <div className="mt-7 flex flex-col gap-3 sm:flex-row md:flex-col">
                   <Link href="/login" className="sm:basis-[61.8%] md:basis-auto">
-                    <Button size="lg" className="h-14 w-full text-[15px] shadow-glow-accent">
+                    <Button
+                      size="lg"
+                      className="h-14 w-full border border-transparent bg-[linear-gradient(98deg,var(--accent)_0%,var(--warning)_48%,var(--danger)_100%)] text-[15px] shadow-glow-accent hover:brightness-105"
+                    >
                       Démarrer maintenant
                       <ArrowRight size={18} />
                     </Button>
                   </Link>
                   <Link href="#features" className="sm:basis-[38.2%] md:basis-auto">
-                    <Button variant="ghost" size="lg" className="h-14 w-full text-[15px]">
+                    <Button
+                      variant="ghost"
+                      size="lg"
+                      className="h-14 w-full border border-warning/35 bg-surface/80 text-[15px] text-text hover:border-danger/45 hover:bg-warning/10 hover:text-text"
+                    >
                       Explorer les modules
                     </Button>
                   </Link>

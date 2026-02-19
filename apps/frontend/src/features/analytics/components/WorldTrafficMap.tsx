@@ -164,13 +164,16 @@ export function WorldTrafficMap({ countries }: WorldTrafficMapProps): JSX.Elemen
 
     const styles = window.getComputedStyle(document.documentElement);
     const textSecondary = styles.getPropertyValue("--text-2").trim() || "#4a5b7c";
+    const textPrimary = styles.getPropertyValue("--text").trim() || "#0f172a";
     const accent = styles.getPropertyValue("--accent").trim() || "#bc620f";
+    const warning = styles.getPropertyValue("--warning").trim() || "#f97316";
+    const danger = styles.getPropertyValue("--danger").trim() || "#ef4444";
 
     const datalessRegionColor = theme === "light" ? "rgba(15,23,42,0.07)" : "rgba(255,255,255,0.05)";
-    const defaultColor = theme === "light" ? "rgba(188,98,15,0.22)" : "rgba(217,119,6,0.18)";
+    const defaultColor = theme === "light" ? "rgba(188,98,15,0.2)" : "rgba(249,115,22,0.16)";
     const colorAxis = theme === "light"
-      ? ["rgba(188,98,15,0.22)", accent, "#8a460b"]
-      : ["rgba(217,119,6,0.22)", accent, "#8a460b"];
+      ? ["rgba(188,98,15,0.2)", warning, danger]
+      : ["rgba(249,115,22,0.2)", accent, danger];
 
     const dataTable = new window.google.visualization.DataTable();
     dataTable.addColumn("string", "Country");
@@ -192,7 +195,7 @@ export function WorldTrafficMap({ countries }: WorldTrafficMapProps): JSX.Elemen
       },
       tooltip: {
         textStyle: {
-          color: "#0F172A"
+          color: textPrimary
         }
       },
       keepAspectRatio: true

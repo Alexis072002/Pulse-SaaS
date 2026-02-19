@@ -30,8 +30,8 @@ export function SubscribersAreaChart({ points }: SubscribersAreaChartProps): JSX
         <AreaChart data={chartData}>
           <defs>
             <linearGradient id="subsGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#FF4444" stopOpacity={0.3} />
-              <stop offset="100%" stopColor="#FF4444" stopOpacity={0.03} />
+              <stop offset="0%" stopColor="var(--danger)" stopOpacity={0.3} />
+              <stop offset="100%" stopColor="var(--danger)" stopOpacity={0.03} />
             </linearGradient>
           </defs>
           <CartesianGrid vertical={false} stroke="var(--chart-grid)" strokeDasharray="4 4" />
@@ -41,7 +41,7 @@ export function SubscribersAreaChart({ points }: SubscribersAreaChartProps): JSX
           <Area
             type="monotone"
             dataKey="subscribers"
-            stroke="#FF4444"
+            stroke="var(--danger)"
             fill="url(#subsGradient)"
             strokeWidth={2.25}
             isAnimationActive

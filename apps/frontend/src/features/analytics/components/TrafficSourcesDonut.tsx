@@ -6,8 +6,14 @@ import type { Ga4TrafficSource } from "@/lib/api/analytics";
 import { formatNumber } from "@/lib/utils/formatNumber";
 import { ChartTooltip } from "@/components/charts/ChartTooltip";
 
-// Updated to Richer Gold palette (Amber 600-900 range)
-const SOURCE_COLORS = ["#D97706", "#B45309", "#92400E", "#78350F", "#9A3412", "#7C2D12"];
+const SOURCE_COLORS = [
+  "var(--accent)",
+  "var(--warning)",
+  "var(--danger)",
+  "var(--highlight)",
+  "var(--accent-soft)",
+  "var(--text-muted)"
+];
 
 interface TrafficSourcesDonutProps {
   sources: Ga4TrafficSource[];

@@ -52,12 +52,12 @@ export function CombinedPerformanceChart({
         <AreaChart data={data}>
           <defs>
             <linearGradient id="ytGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#FF4444" stopOpacity={0.25} />
-              <stop offset="100%" stopColor="#FF4444" stopOpacity={0} />
+              <stop offset="0%" stopColor="var(--danger)" stopOpacity={0.25} />
+              <stop offset="100%" stopColor="var(--danger)" stopOpacity={0} />
             </linearGradient>
             <linearGradient id="gaGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#34D399" stopOpacity={0.25} />
-              <stop offset="100%" stopColor="#34D399" stopOpacity={0} />
+              <stop offset="0%" stopColor="var(--warning)" stopOpacity={0.25} />
+              <stop offset="100%" stopColor="var(--warning)" stopOpacity={0} />
             </linearGradient>
           </defs>
           <CartesianGrid vertical={false} stroke="var(--chart-grid)" strokeDasharray="4 4" />
@@ -76,7 +76,7 @@ export function CombinedPerformanceChart({
           <Area
             type="monotone"
             dataKey="youtube"
-            stroke="#FF4444"
+            stroke="var(--danger)"
             fill="url(#ytGradient)"
             strokeWidth={2}
             isAnimationActive
@@ -86,7 +86,7 @@ export function CombinedPerformanceChart({
           <Area
             type="monotone"
             dataKey="ga"
-            stroke="#34D399"
+            stroke="var(--warning)"
             fill="url(#gaGradient)"
             strokeWidth={2}
             isAnimationActive

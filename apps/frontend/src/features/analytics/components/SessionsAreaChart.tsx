@@ -20,8 +20,8 @@ export function SessionsAreaChart({ data }: SessionsAreaChartProps): JSX.Element
         <AreaChart data={data}>
           <defs>
             <linearGradient id="gaSessionsGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#34D399" stopOpacity={0.3} />
-              <stop offset="100%" stopColor="#34D399" stopOpacity={0.03} />
+              <stop offset="0%" stopColor="var(--warning)" stopOpacity={0.3} />
+              <stop offset="100%" stopColor="var(--warning)" stopOpacity={0.03} />
             </linearGradient>
           </defs>
           <CartesianGrid vertical={false} stroke="var(--chart-grid)" strokeDasharray="4 4" />
@@ -31,7 +31,7 @@ export function SessionsAreaChart({ data }: SessionsAreaChartProps): JSX.Element
           <Area
             type="monotone"
             dataKey="sessions"
-            stroke="#34D399"
+            stroke="var(--warning)"
             fill="url(#gaSessionsGradient)"
             strokeWidth={2.25}
             isAnimationActive

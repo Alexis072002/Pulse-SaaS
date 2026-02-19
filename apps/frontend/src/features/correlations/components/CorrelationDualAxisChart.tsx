@@ -86,12 +86,12 @@ export function CorrelationDualAxisChart({
                 key={`${event.date}-${event.label}`}
                 x={dateLabel}
                 yAxisId="youtube"
-                stroke="#D97706"
+                stroke="var(--accent)"
                 strokeDasharray="4 4"
                 label={labelledEventKeys.has(`${event.date}-${event.label}`) ? {
                   value: event.label,
                   position: "insideTopRight",
-                  fill: "#D97706",
+                  fill: "var(--accent)",
                   fontSize: 10
                 } : undefined}
               />
@@ -102,10 +102,10 @@ export function CorrelationDualAxisChart({
             yAxisId="youtube"
             type="monotone"
             dataKey="youtubeViews"
-            stroke="#FF4444"
+            stroke="var(--danger)"
             strokeWidth={2.25}
             dot={false}
-            activeDot={{ r: 4, fill: "#FF4444", stroke: "var(--bg)", strokeWidth: 2 }}
+            activeDot={{ r: 4, fill: "var(--danger)", stroke: "var(--bg)", strokeWidth: 2 }}
             isAnimationActive
             animationDuration={1500} // Slower for complex line chart
             animationEasing="ease-out"
@@ -114,10 +114,10 @@ export function CorrelationDualAxisChart({
             yAxisId="web"
             type="monotone"
             dataKey="webSessions"
-            stroke="#34D399"
+            stroke="var(--warning)"
             strokeWidth={2.25}
             dot={false}
-            activeDot={{ r: 4, fill: "#34D399", stroke: "var(--bg)", strokeWidth: 2 }}
+            activeDot={{ r: 4, fill: "var(--warning)", stroke: "var(--bg)", strokeWidth: 2 }}
             isAnimationActive
             animationDuration={1500}
             animationEasing="ease-out"

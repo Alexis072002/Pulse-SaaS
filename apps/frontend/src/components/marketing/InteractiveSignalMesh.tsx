@@ -109,10 +109,8 @@ export function InteractiveSignalMesh({ className }: InteractiveSignalMeshProps)
     let nodeBase = mixColor(accent, textTwo, 0.46);
     let warmPalette: RgbColor[] = [
       accent,
-      parseRgb("", "#d97706"),
-      parseRgb("", "#ef4444"),
-      parseRgb("", "#f59e0b"),
-      parseRgb("", "#fbbf24")
+      parseRgb("", "#f97316"),
+      parseRgb("", "#ef4444")
     ];
 
     const readPalette = () => {
@@ -123,10 +121,8 @@ export function InteractiveSignalMesh({ className }: InteractiveSignalMeshProps)
       nodeBase = mixColor(accent, textTwo, 0.46);
       warmPalette = [
         accent,
-        parseRgb(styles.getPropertyValue("--accent-soft"), "#d97706"),
-        parseRgb(styles.getPropertyValue("--danger"), "#ef4444"),
-        parseRgb(styles.getPropertyValue("--warning"), "#f59e0b"),
-        parseRgb(styles.getPropertyValue("--highlight"), "#fbbf24")
+        parseRgb(styles.getPropertyValue("--warning"), "#f97316"),
+        parseRgb(styles.getPropertyValue("--danger"), "#ef4444")
       ];
     };
 

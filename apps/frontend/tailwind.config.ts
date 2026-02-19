@@ -18,10 +18,13 @@ const config: Config = {
         "accent-hover": "var(--accent-hover)",
         "accent-muted": "var(--accent-muted)",
         "accent-glow": "var(--accent-glow)",
-        youtube: "#FF4444",
-        "youtube-light": "#FF6B6B",
-        ga: "#34D399",
-        "ga-light": "#6EE7B7",
+        youtube: "var(--danger)",
+        "youtube-light": "var(--highlight)",
+        ga: "var(--warning)",
+        "ga-light": "var(--accent-soft)",
+        danger: "var(--danger)",
+        warning: "var(--warning)",
+        highlight: "var(--highlight)",
         info: "#3B82F6"
       },
       fontFamily: {

@@ -43,7 +43,7 @@ function CountUp({ value }: { value: number }): JSX.Element {
 
 export function KpiCard({ label, value, delta, accent, index, icon }: KpiCardProps): JSX.Element {
   const accentColor =
-    accent === "youtube" ? "#FF4444" : accent === "ga" ? "#34D399" : "var(--accent)";
+    accent === "youtube" ? "var(--danger)" : accent === "ga" ? "var(--warning)" : "var(--accent)";
 
   return (
     <motion.article

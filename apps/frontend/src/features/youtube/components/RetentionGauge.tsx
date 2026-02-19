@@ -12,7 +12,7 @@ export function RetentionGauge({ retention, delta }: RetentionGaugeProps): JSX.E
   const circumference = 2 * Math.PI * radius;
   const clampedRetention = Math.max(0, Math.min(100, retention));
   const dashOffset = circumference * (1 - clampedRetention / 100);
-  const toneClass = delta >= 0 ? "border-ga/30 bg-ga/10 text-ga" : "border-youtube/30 bg-youtube/10 text-youtube";
+  const toneClass = delta >= 0 ? "border-warning/30 bg-warning/10 text-warning" : "border-youtube/30 bg-youtube/10 text-youtube";
 
   return (
     <section className="glass rounded-2xl p-5">
@@ -37,20 +37,20 @@ export function RetentionGauge({ retention, delta }: RetentionGaugeProps): JSX.E
               strokeLinecap="round"
               strokeDasharray="4 8"
             />
-          <motion.circle
-            cx="88"
-            cy="88"
-            r={radius}
-            stroke="#FF4444"
-            strokeWidth="14"
-            fill="none"
-            strokeLinecap="round"
-            transform="rotate(-90 88 88)"
-            strokeDasharray={circumference}
-            initial={{ strokeDashoffset: circumference }}
-            animate={{ strokeDashoffset: dashOffset }}
-            transition={{ duration: 1.1, ease: "easeOut" }}
-          />
+            <motion.circle
+              cx="88"
+              cy="88"
+              r={radius}
+              stroke="var(--danger)"
+              strokeWidth="14"
+              fill="none"
+              strokeLinecap="round"
+              transform="rotate(-90 88 88)"
+              strokeDasharray={circumference}
+              initial={{ strokeDashoffset: circumference }}
+              animate={{ strokeDashoffset: dashOffset }}
+              transition={{ duration: 1.1, ease: "easeOut" }}
+            />
           </svg>
 
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
