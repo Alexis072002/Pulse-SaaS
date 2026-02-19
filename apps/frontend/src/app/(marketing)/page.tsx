@@ -14,7 +14,7 @@ import {
   Zap,
   type LucideIcon
 } from "lucide-react";
-import { InteractiveParticles } from "@/components/marketing/InteractiveParticles";
+import { InteractiveSignalMesh } from "@/components/marketing/InteractiveSignalMesh";
 import { Button } from "@/components/ui/Button";
 
 interface FeatureItem {
@@ -220,14 +220,7 @@ export default function LandingPage(): JSX.Element {
           style={{ y: auraOffset }}
           className="pointer-events-none absolute -right-16 top-24 h-[340px] w-[340px] rounded-full bg-ga/15 blur-[95px]"
         />
-        <InteractiveParticles
-          className="opacity-95"
-          density={7800}
-          minSize={1.2}
-          maxSize={3.8}
-          alphaMin={0.34}
-          alphaMax={0.94}
-        />
+        <InteractiveSignalMesh className="opacity-[0.82]" />
 
         <motion.div
           initial="hidden"
