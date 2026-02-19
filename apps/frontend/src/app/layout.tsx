@@ -19,7 +19,12 @@ const jetbrains = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "Pulse Analytics",
-  description: "SaaS analytics multi-plateforme — YouTube & GA4"
+  description: "SaaS analytics multi-plateforme — YouTube & GA4",
+  icons: {
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg",
+    apple: "/favicon.svg"
+  }
 };
 
 export default function RootLayout({ children }: { children: ReactNode }): JSX.Element {

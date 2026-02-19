@@ -17,10 +17,10 @@
   --text-muted: #8a98b8;
   --kpi-meta: #f3f7ff;
 
-  --accent: #c86b12;
-  --accent-hover: #a9570f;
-  --accent-muted: rgba(200, 107, 18, 0.14);
-  --accent-glow: rgba(200, 107, 18, 0.26);
+  --accent: #a9570f;
+  --accent-hover: #8f470a;
+  --accent-muted: rgba(169, 87, 15, 0.14);
+  --accent-glow: rgba(169, 87, 15, 0.26);
 
   --glass-bg: rgba(9, 12, 22, 0.72);
   --glass-border: rgba(148, 163, 184, 0.16);
@@ -49,10 +49,10 @@
   --text-2: #35486c;
   --text-muted: #556a92;
   --kpi-meta: #415779;
-  --accent: #bc620f;
-  --accent-hover: #9f500c;
-  --accent-muted: rgba(188, 98, 15, 0.14);
-  --accent-glow: rgba(188, 98, 15, 0.18);
+  --accent: #9f500c;
+  --accent-hover: #86440a;
+  --accent-muted: rgba(159, 80, 12, 0.14);
+  --accent-glow: rgba(159, 80, 12, 0.18);
   --glass-bg: rgba(255, 255, 255, 0.82);
   --glass-border: rgba(15, 23, 42, 0.1);
   --glass-shadow: 0 10px 34px rgba(15, 23, 42, 0.1);

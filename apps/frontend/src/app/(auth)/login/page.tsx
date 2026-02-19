@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
@@ -36,12 +35,7 @@ export default function LoginPage({
         <div className="absolute left-1/2 top-1/2 h-[300px] w-[300px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent/[0.04] blur-[80px]" />
       </div>
 
-      <motion.section
-        initial={{ opacity: 0, y: 20, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-        className="glass-strong relative w-full max-w-md rounded-3xl p-8"
-      >
+      <section className="glass-strong relative w-full max-w-md rounded-3xl p-8">
         <div className="mb-8">
           <PulseLogo />
         </div>
@@ -52,13 +46,9 @@ export default function LoginPage({
         </p>
 
         {hasOAuthError ? (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            className="mt-4 rounded-xl border border-youtube/20 bg-youtube/10 px-4 py-3 text-xs text-youtube"
-          >
+          <div className="mt-4 rounded-xl border border-youtube/20 bg-youtube/10 px-4 py-3 text-xs text-youtube">
             L&apos;authentification Google a échoué. Réessaie après avoir vérifié tes variables OAuth.
-          </motion.div>
+          </div>
         ) : null}
 
         <form className="mt-8 space-y-4" action={`${API_URL}/auth/google`} method="GET">
@@ -103,7 +93,7 @@ export default function LoginPage({
         <p className="mt-8 text-center text-[11px] text-text-muted">
           Powered by <span className="font-semibold text-text-2">Pulse Analytics</span>
         </p>
-      </motion.section>
+      </section>
     </main>
   );
 }

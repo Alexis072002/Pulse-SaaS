@@ -19,7 +19,6 @@
       }
     },
     "assert": {
-      "preset": "lighthouse:recommended",
       "assertions": {
         "categories:performance": [
           "error",
@@ -29,6 +28,14 @@
           "error",
           { "minScore": 0.9 }
         ],
+        "errors-in-console": [
+          "error",
+          { "minScore": 1 }
+        ],
+        "bf-cache": "off",
+        "legacy-javascript": "off",
+        "legacy-javascript-insight": "off",
+        "network-dependency-tree-insight": "off",
         "cumulative-layout-shift": [
           "error",
           { "maxNumericValue": 0.1 }
