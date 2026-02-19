@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 80" width="300" height="80">
+  <defs>
+    <linearGradient id="waveGradL" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#E8541A"/>
+      <stop offset="60%" stop-color="#D4380D"/>
+      <stop offset="100%" stop-color="#FF7A45"/>
+    </linearGradient>
+    <linearGradient id="barGradL" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#E8541A"/>
+      <stop offset="100%" stop-color="#7A1C05"/>
+    </linearGradient>
+    <filter id="glowL">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <g transform="translate(4, 8)">
+    <rect x="0"  y="38" width="8" height="22" rx="2" fill="#E8541A" opacity="0.3"/>
+    <rect x="12" y="22" width="8" height="38" rx="2" fill="#E8541A" opacity="0.55"/>
+    <rect x="24" y="10" width="8" height="50" rx="2" fill="url(#barGradL)"/>
+    <rect x="36" y="28" width="8" height="32" rx="2" fill="#E8541A" opacity="0.55"/>
+    <rect x="48" y="42" width="8" height="18" rx="2" fill="#E8541A" opacity="0.3"/>
+    <polyline points="0,34 8,34 14,10 20,50 26,20 32,50 38,28 44,34 56,34" fill="none" stroke="url(#waveGradL)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#glowL)"/>
+    <circle cx="14" cy="10" r="3.5" fill="#FF7A45" filter="url(#glowL)"/>
+  </g>
+
+  <text x="76" y="50" font-family="'Courier New', monospace" font-size="30" font-weight="700" letter-spacing="-1" fill="#1A1A2E">PULSE</text>
+  <line x1="76" y1="56" x2="218" y2="56" stroke="#E8541A" stroke-width="1" opacity="0.5"/>
+  <text x="76" y="68" font-family="'Courier New', monospace" font-size="9" letter-spacing="3" fill="#E8541A" opacity="0.8">ANALYTICS PLATFORM</text>
+</svg>

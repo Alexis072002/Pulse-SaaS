@@ -21,9 +21,9 @@ export const metadata: Metadata = {
   title: "Pulse Analytics",
   description: "SaaS analytics multi-plateforme — YouTube & GA4",
   icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
-    apple: "/favicon.svg"
+    icon: "/pulse-icon.svg",
+    shortcut: "/pulse-icon.svg",
+    apple: "/pulse-icon.svg"
   }
 };
 

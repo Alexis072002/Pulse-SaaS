@@ -101,6 +101,8 @@ export function InteractiveSignalMesh({ className }: InteractiveSignalMeshProps)
     let height = 0;
     let scale = 1;
     let rafId = 0;
+    let isVisible = true;
+    let isLoopRunning = false;
     let nodes: NodePoint[] = [];
 
     let accent = parseRgb(getComputedStyle(document.documentElement).getPropertyValue("--accent"), "#a9570f");
@@ -174,7 +176,7 @@ export function InteractiveSignalMesh({ className }: InteractiveSignalMeshProps)
       targetMouse.current = { x: 0.5, y: 0.45, active: false };
     };
 
-    const draw = (timestamp: number) => {
+    const renderFrame = (timestamp: number) => {
       const t = timestamp * 0.001;
       const motionFactor = prefersReducedMotion.matches ? 0 : 1;
       const mouseEase = prefersReducedMotion.matches ? 0.16 : 0.065;
@@ -308,13 +310,61 @@ export function InteractiveSignalMesh({ className }: InteractiveSignalMeshProps)
         context.arc(node.x, node.y, r, 0, Math.PI * 2);
         context.fill();
       }
+    };
 
-      rafId = requestAnimationFrame(draw);
+    const loop = (timestamp: number) => {
+      if (!isLoopRunning) {
+        return;
+      }
+      renderFrame(timestamp);
+      rafId = requestAnimationFrame(loop);
+    };
+
+    const startLoop = () => {
+      if (isLoopRunning) {
+        return;
+      }
+      isLoopRunning = true;
+      renderFrame(performance.now());
+      rafId = requestAnimationFrame(loop);
+    };
+
+    const stopLoop = () => {
+      if (!isLoopRunning) {
+        return;
+      }
+      isLoopRunning = false;
+      cancelAnimationFrame(rafId);
     };
 
     const resizeObserver = new ResizeObserver(() => {
       setCanvasSize();
+      if (isVisible) {
+        renderFrame(performance.now());
+      }
     });
+
+    const visibilityObserver = new IntersectionObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) {
+        return;
+      }
+
+      isVisible = entry.isIntersecting;
+      if (isVisible) {
+        startLoop();
+      } else {
+        stopLoop();
+      }
+    }, { rootMargin: "120px 0px" });
+
+    const handleDocumentVisibility = () => {
+      if (document.visibilityState === "visible" && isVisible) {
+        startLoop();
+      } else {
+        stopLoop();
+      }
+    };
 
     const themeObserver = new MutationObserver(() => {
       readPalette();
@@ -323,18 +373,22 @@ export function InteractiveSignalMesh({ className }: InteractiveSignalMeshProps)
     readPalette();
     setCanvasSize();
     resizeObserver.observe(host);
+    visibilityObserver.observe(host);
     themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    document.addEventListener("visibilitychange", handleDocumentVisibility);
 
     window.addEventListener("pointermove", updateMousePosition, { passive: true });
     window.addEventListener("pointerleave", resetMouse, { passive: true });
-    rafId = requestAnimationFrame(draw);
+    startLoop();
 
     return () => {
+      stopLoop();
       resizeObserver.disconnect();
+      visibilityObserver.disconnect();
       themeObserver.disconnect();
+      document.removeEventListener("visibilitychange", handleDocumentVisibility);
       window.removeEventListener("pointermove", updateMousePosition);
       window.removeEventListener("pointerleave", resetMouse);
-      cancelAnimationFrame(rafId);
     };
   }, []);
 

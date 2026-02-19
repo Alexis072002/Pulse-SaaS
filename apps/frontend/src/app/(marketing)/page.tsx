@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { animate, motion, useInView, useScroll, useTransform } from "framer-motion";
@@ -9,12 +10,15 @@ import {
   BrainCircuit,
   CheckCircle2,
   Globe2,
+  Moon,
   Shield,
+  Sun,
   Zap,
   type LucideIcon
 } from "lucide-react";
 import { InteractiveSignalMesh } from "@/components/marketing/InteractiveSignalMesh";
 import { Button } from "@/components/ui/Button";
+import { useUiStore } from "@/store/ui-store";
 
 interface FeatureItem {
   icon: LucideIcon;
@@ -181,21 +185,28 @@ function AnimatedStat({ item, index }: { item: StatItem; index: number }): JSX.E
 
 export default function LandingPage(): JSX.Element {
   const { scrollY } = useScroll();
+  const { theme, setTheme } = useUiStore();
   const auraOffset = useTransform(scrollY, [0, 700], [0, 68]);
+  const logoSrc = theme === "dark" ? "/logos/pulse-logo-dark.svg" : "/logos/pulse-logo-light.svg";
+  const toggleTheme = (): void => {
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    setTheme(nextTheme);
+    document.documentElement.setAttribute("data-theme", nextTheme);
+    window.localStorage.setItem("pulse-theme", nextTheme);
+  };
 
   return (
     <div className="relative min-h-screen bg-bg">
       <nav className="fixed left-0 right-0 top-0 z-50 flex items-center justify-between border-b border-border bg-bg/80 px-6 py-4 backdrop-blur-md md:px-12">
-        <div className="flex items-center gap-2">
-          <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-accent/10">
-            <span className="text-sm font-bold text-accent">P</span>
-            <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-accent animate-pulse-dot" />
-          </div>
-          <span className="text-lg font-bold text-text">
-            puls<span className="text-accent">e</span>
-          </span>
-        </div>
+        <Image src={logoSrc} alt="Pulse Analytics" width={132} height={35} className="h-8 w-auto" priority />
         <div className="flex items-center gap-3">
+          <button
+            onClick={toggleTheme}
+            aria-label={theme === "dark" ? "Activer le mode clair" : "Activer le mode sombre"}
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-surface/70 text-text-2 transition-colors hover:border-warning/45 hover:bg-warning/10 hover:text-text"
+          >
+            {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
           <Link href="/login">
             <Button
               variant="ghost"
@@ -229,7 +240,7 @@ export default function LandingPage(): JSX.Element {
         <InteractiveSignalMesh className="opacity-[0.82]" />
 
         <motion.div
-          initial="hidden"
+          initial={false}
           animate="show"
           variants={container}
           className="relative z-10 mx-auto w-full max-w-5xl"
@@ -634,14 +645,7 @@ export default function LandingPage(): JSX.Element {
 
       <footer className="relative z-10 border-t border-border py-12">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-6 sm:flex-row">
-          <div className="flex items-center gap-2">
-            <div className="relative flex h-6 w-6 items-center justify-center rounded bg-accent/10">
-              <span className="text-[10px] font-bold text-accent">P</span>
-            </div>
-            <span className="text-sm font-semibold text-text">
-              puls<span className="text-accent">e</span>
-            </span>
-          </div>
+          <Image src={logoSrc} alt="Pulse Analytics" width={120} height={32} className="h-7 w-auto" />
           <p className="text-sm text-text-muted">© {new Date().getFullYear()} Pulse Analytics. Tous droits réservés.</p>
         </div>
       </footer>

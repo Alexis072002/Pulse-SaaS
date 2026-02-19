@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -28,25 +29,16 @@ const items = [
 ] as const;
 
 function PulseLogo({ collapsed }: { collapsed: boolean }): JSX.Element {
+  const { theme } = useUiStore();
+  const logoSrc = theme === "dark" ? "/logos/pulse-logo-dark.svg" : "/logos/pulse-logo-light.svg";
+
   return (
-    <div className="flex items-center gap-2">
-      <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent/15">
-        <span className="text-sm font-bold text-accent">P</span>
-        <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-accent animate-pulse-dot" />
-      </div>
-      <AnimatePresence>
-        {!collapsed && (
-          <motion.span
-            initial={{ opacity: 0, width: 0 }}
-            animate={{ opacity: 1, width: "auto" }}
-            exit={{ opacity: 0, width: 0 }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden whitespace-nowrap text-lg font-bold text-text"
-          >
-            puls<span className="text-accent">e</span>
-          </motion.span>
-        )}
-      </AnimatePresence>
+    <div className="flex items-center justify-center">
+      {collapsed ? (
+        <Image src="/pulse-icon.svg" alt="Pulse" width={30} height={30} className="h-8 w-8" priority />
+      ) : (
+        <Image src={logoSrc} alt="Pulse Analytics" width={132} height={35} className="h-8 w-auto" priority />
+      )}
     </div>
   );
 }
