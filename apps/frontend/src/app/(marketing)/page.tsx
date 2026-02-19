@@ -9,7 +9,6 @@ import {
   BrainCircuit,
   CheckCircle2,
   Globe2,
-  LineChart,
   Shield,
   Sparkles,
   Zap,
@@ -20,12 +19,13 @@ import { Button } from "@/components/ui/Button";
 
 interface FeatureItem {
   icon: LucideIcon;
+  day: string;
   title: string;
-  description: string;
-  eyebrow: string;
-  signal: string;
-  outcomes: string[];
-  bento: string;
+  context: string;
+  insight: string;
+  decision: string;
+  impact: string;
+  tags: string[];
 }
 
 interface StatItem {
@@ -37,60 +37,48 @@ interface StatItem {
   decimals?: number;
 }
 
+interface JourneyStep {
+  title: string;
+  description: string;
+}
+
+interface TrustPillar {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  proof: string;
+}
+
 const features: FeatureItem[] = [
   {
     icon: Globe2,
-    title: "Google Analytics (GA4)",
-    description: "Sessions, acquisition, engagement et pages clés dans une lecture actionnable pour ton produit.",
-    eyebrow: "Acquisition",
-    signal: "Live data stream",
-    outcomes: ["Sources qui convertissent", "Pages qui retiennent"],
-    bento: "xl:col-span-7"
+    day: "Jour 1",
+    title: "Tu connectes tes sources",
+    context: "Connexion OAuth Google et choix de la propriété GA4 en quelques minutes.",
+    insight: "Pulse consolide YouTube + GA4 dans une base de lecture unique.",
+    decision: "Tu identifies immédiatement les indicateurs utiles au lieu de naviguer entre outils.",
+    impact: "Setup terminé, cockpit prêt à l’usage dès la première session.",
+    tags: ["OAuth sécurisé", "YouTube", "GA4"]
   },
   {
     icon: BarChart3,
-    title: "YouTube Deep Dive",
-    description: "Rétention, abonnements, et performance vidéo dans le même cockpit.",
-    eyebrow: "Contenu",
-    signal: "Creator intelligence",
-    outcomes: ["Moments de drop", "Formats qui performent"],
-    bento: "xl:col-span-5"
+    day: "Jour 3",
+    title: "Tu lis les signaux qui comptent",
+    context: "Les dashboards font ressortir la performance contenu + trafic sans bruit visuel.",
+    insight: "Les corrélations montrent l’impact d’une vidéo sur les sessions web avec délai estimé.",
+    decision: "Tu ajustes format, timing de publication et canaux d’acquisition sur des faits.",
+    impact: "Des arbitrages rapides et argumentés, pas des intuitions.",
+    tags: ["KPIs unifiés", "Corrélations IA", "Top vidéos/pages"]
   },
   {
     icon: BrainCircuit,
-    title: "Corrélations IA",
-    description: "Détecte les signaux entre publication vidéo, trafic web et croissance.",
-    eyebrow: "Intelligence",
-    signal: "Cross-platform links",
-    outcomes: ["Impact post-publication", "Lag estimé par période"],
-    bento: "xl:col-span-4"
-  },
-  {
-    icon: LineChart,
-    title: "Tableaux de bord vivants",
-    description: "Des vues qui restent lisibles en temps réel, sans bruit visuel.",
-    eyebrow: "Pilotage",
-    signal: "Clean operator UI",
-    outcomes: ["Vue unique de pilotage", "Focus sur les KPI utiles"],
-    bento: "xl:col-span-4"
-  },
-  {
-    icon: Shield,
-    title: "Sécurité production",
-    description: "OAuth2, chiffrement et stockage robuste pour un workflow fiable.",
-    eyebrow: "Confiance",
-    signal: "Secure by default",
-    outcomes: ["Tokens chiffrés", "Session contrôlée"],
-    bento: "xl:col-span-4"
-  },
-  {
-    icon: Zap,
-    title: "Pipeline rapide",
-    description: "Synchronisation continue pour prendre des décisions quand ça compte.",
-    eyebrow: "Vitesse",
-    signal: "High cadence refresh",
-    outcomes: ["Insights quasi temps réel", "Boucle d’itération courte"],
-    bento: "xl:col-span-12"
+    day: "Jour 7",
+    title: "Tu industrialises ton pilotage",
+    context: "Rapports PDF, historique et workflows d’équipe centralisés dans Pulse.",
+    insight: "Tu partages une lecture commune avec ton équipe ou tes clients.",
+    decision: "Tu priorises les actions à plus fort levier pour la semaine suivante.",
+    impact: "Un rythme de croissance plus fiable, basé sur des boucles courtes.",
+    tags: ["Rapports PDF", "Historique", "Pilotage hebdo"]
   }
 ];
 
@@ -99,6 +87,42 @@ const stats: StatItem[] = [
   { end: 99.9, suffix: "%", decimals: 1, label: "Uptime garanti" },
   { start: 4, end: 1, prefix: "<", suffix: "s", label: "Temps de chargement" },
   { end: 256, suffix: "-bit", label: "Chiffrement" }
+];
+
+const journeySteps: JourneyStep[] = [
+  {
+    title: "Connecte Google en 2 minutes",
+    description: "OAuth sécurisé pour lier YouTube et GA4 sans manipulation complexe."
+  },
+  {
+    title: "Pulse synchronise et consolide",
+    description: "Les données sont normalisées dans un seul cockpit lisible."
+  },
+  {
+    title: "Tu prends des décisions actionnables",
+    description: "KPIs, corrélations et rapports PDF pour exécuter, pas juste observer."
+  }
+];
+
+const trustPillars: TrustPillar[] = [
+  {
+    icon: Shield,
+    title: "Accès sécurisé par défaut",
+    description: "Connexion OAuth Google, session contrôlée et révocation rapide.",
+    proof: "Scopes explicites et minimisés"
+  },
+  {
+    icon: BrainCircuit,
+    title: "Données exploitables, pas du bruit",
+    description: "Des vues construites pour la décision produit, sans vanity metrics.",
+    proof: "KPIs orientés action"
+  },
+  {
+    icon: Zap,
+    title: "Workflow orienté exécution",
+    description: "Rapports, historiques et relances pour garder ton rythme d’itération.",
+    proof: "Automatisation intégrée"
+  }
 ];
 
 const container = {
@@ -264,18 +288,140 @@ export default function LandingPage(): JSX.Element {
         </motion.div>
       </section>
 
-      <section id="features" className="relative z-10 py-28">
+      <section id="features" className="relative z-10 py-32">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="grid items-start gap-8 lg:grid-cols-[0.92fr_1.08fr] lg:gap-10">
+            <motion.aside
+              initial={{ opacity: 0, y: 14 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-120px" }}
+              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              className="lg:sticky lg:top-28"
+            >
+              <div className="rounded-3xl border border-border bg-surface/75 p-7 backdrop-blur-sm md:p-8">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">
+                  Transformation en 7 jours
+                </p>
+                <h2 className="mt-3 text-3xl font-bold tracking-tight text-text md:text-[2.7rem]">
+                  Tout ce dont tu as besoin pour passer de la data a la decision
+                </h2>
+                <p className="mt-5 text-base leading-relaxed text-text-2">
+                  Pulse ne te montre pas juste des graphiques. Il structure une progression claire: connecter, comprendre,
+                  executer.
+                </p>
+
+                <div className="mt-8 space-y-3">
+                  {features.map((step, index) => (
+                    <div key={step.day} className="flex items-center gap-3">
+                      <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-accent/25 bg-accent/10 font-mono text-xs font-semibold text-accent">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      <p className="text-sm font-medium text-text">
+                        {step.day}: {step.title}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-8 flex flex-col gap-3 sm:flex-row lg:flex-col">
+                  <Link href="/login">
+                    <Button size="lg" className="h-14 w-full text-[15px] shadow-glow-accent">
+                      Commencer gratuitement
+                      <ArrowRight size={18} />
+                    </Button>
+                  </Link>
+                  <Link href="/overview">
+                    <Button variant="ghost" size="lg" className="h-14 w-full text-[15px]">
+                      Voir le dashboard
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </motion.aside>
+
+            <motion.div
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, margin: "-80px" }}
+              variants={container}
+              className="relative"
+            >
+              <div className="pointer-events-none absolute left-5 top-8 hidden h-[calc(100%-4rem)] w-px bg-border lg:block" />
+              <div className="space-y-6">
+                {features.map((feature) => {
+                  const Icon = feature.icon;
+
+                  return (
+                    <motion.article
+                      key={feature.day}
+                      variants={reveal}
+                      className="group relative overflow-hidden rounded-3xl border border-border bg-surface/75 p-7 backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-accent/35 hover:bg-surface-hover hover:shadow-glow-sm md:p-8"
+                    >
+                      <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-accent/15 blur-3xl" />
+                      <span className="absolute left-[18px] top-10 hidden h-3 w-3 rounded-full bg-accent ring-4 ring-accent/20 lg:block" />
+
+                      <div className="relative lg:pl-8">
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-accent">{feature.day}</p>
+                            <h3 className="mt-3 text-2xl font-semibold leading-tight text-text">{feature.title}</h3>
+                          </div>
+                          <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-border bg-surface-2 text-accent">
+                            <Icon size={20} />
+                          </span>
+                        </div>
+
+                        <p className="mt-4 text-[15px] leading-relaxed text-text-2">{feature.context}</p>
+
+                        <div className="mt-6 grid gap-3 md:grid-cols-2">
+                          <div className="rounded-2xl border border-border bg-surface-2/70 px-4 py-3">
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-text-muted">Insight obtenu</p>
+                            <p className="mt-2 text-sm leading-relaxed text-text">{feature.insight}</p>
+                          </div>
+                          <div className="rounded-2xl border border-border bg-surface-2/70 px-4 py-3">
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-text-muted">Decision prise</p>
+                            <p className="mt-2 text-sm leading-relaxed text-text">{feature.decision}</p>
+                          </div>
+                        </div>
+
+                        <div className="mt-5 rounded-2xl border border-accent/25 bg-accent/10 px-4 py-3">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-accent">Resultat attendu</p>
+                          <p className="mt-2 text-sm leading-relaxed text-text">{feature.impact}</p>
+                        </div>
+
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {feature.tags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="rounded-full border border-border bg-surface-2/75 px-2.5 py-1 text-[11px] text-text-2"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </motion.article>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      <section className="relative z-10 pb-8">
         <div className="mx-auto max-w-7xl px-6">
           <motion.div
             initial={{ opacity: 0, y: 14 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-120px" }}
-            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
             className="mx-auto max-w-3xl text-center"
           >
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">Plateforme unifiée</p>
-            <h2 className="mt-3 text-3xl font-bold tracking-tight text-text md:text-5xl">Tout ce dont tu as besoin</h2>
-            <p className="mt-5 text-base leading-relaxed text-text-2 md:text-lg">Une architecture pensée produit: chaque module répond à une décision concrète.</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">Avant / apres</p>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight text-text md:text-5xl">
+              Ce qui change avec Pulse
+            </h2>
           </motion.div>
 
           <motion.div
@@ -283,59 +429,137 @@ export default function LandingPage(): JSX.Element {
             whileInView="show"
             viewport={{ once: true, margin: "-80px" }}
             variants={container}
-            className="mt-14 grid auto-rows-[minmax(150px,auto)] gap-4 sm:grid-cols-2 xl:grid-cols-12"
+            className="mt-12 grid items-stretch gap-5 lg:grid-cols-[1fr_88px_1fr]"
           >
-            {features.map((feature, index) => {
-              const Icon = feature.icon;
-              const indicatorWidth = 46 + (index % 4) * 12;
+            <motion.article
+              variants={reveal}
+              className="rounded-3xl border border-border bg-surface/70 p-7 backdrop-blur-sm md:p-8"
+            >
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted">Sans Pulse</p>
+              <h3 className="mt-3 text-2xl font-semibold text-text">Tu jongles entre outils</h3>
+              <p className="mt-4 text-sm leading-relaxed text-text-2">
+                Les donnees existent, mais elles sont fragmentees. Le temps part en collecte au lieu d&apos;aller dans
+                l&apos;action.
+              </p>
+              <div className="mt-6 space-y-3">
+                <p className="text-sm text-text-2">- Visibilite partielle sur la performance reelle</p>
+                <p className="text-sm text-text-2">- Difficultes a relier publication et impact business</p>
+                <p className="text-sm text-text-2">- Decisions retardees faute de synthese claire</p>
+              </div>
+            </motion.article>
 
+            <motion.div variants={reveal} className="hidden items-center justify-center lg:flex">
+              <div className="inline-flex h-20 w-20 items-center justify-center rounded-full border border-accent/30 bg-accent/10 text-accent">
+                <ArrowRight size={26} />
+              </div>
+            </motion.div>
+
+            <motion.article
+              variants={reveal}
+              className="rounded-3xl border border-border bg-surface/70 p-7 backdrop-blur-sm md:p-8"
+            >
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-accent">Avec Pulse</p>
+              <h3 className="mt-3 text-2xl font-semibold text-text">Tu pilotes en continu</h3>
+              <p className="mt-4 text-sm leading-relaxed text-text-2">
+                YouTube et GA4 dans un seul dashboard. Tu vois, tu comprends, puis tu executes.
+              </p>
+              <div className="mt-6 space-y-3">
+                <p className="inline-flex items-start gap-2 text-sm text-text">
+                  <CheckCircle2 size={15} className="mt-[1px] shrink-0 text-accent" />
+                  <span>Lecture immediate des KPIs qui comptent</span>
+                </p>
+                <p className="inline-flex items-start gap-2 text-sm text-text">
+                  <CheckCircle2 size={15} className="mt-[1px] shrink-0 text-accent" />
+                  <span>Corrélations claires entre contenu et trafic</span>
+                </p>
+                <p className="inline-flex items-start gap-2 text-sm text-text">
+                  <CheckCircle2 size={15} className="mt-[1px] shrink-0 text-accent" />
+                  <span>Rapports prêts à partager avec ton équipe</span>
+                </p>
+              </div>
+            </motion.article>
+          </motion.div>
+        </div>
+      </section>
+
+      <section className="relative z-10 py-24">
+        <div className="mx-auto max-w-7xl px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+            className="mx-auto max-w-3xl text-center"
+          >
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">Onboarding</p>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight text-text md:text-5xl">Comment ca marche</h2>
+            <p className="mt-5 text-base leading-relaxed text-text-2 md:text-lg">
+              Trois etapes pour passer de la connexion a une vue decisionnelle complete.
+            </p>
+          </motion.div>
+
+          <motion.ol
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-80px" }}
+            variants={container}
+            className="mt-14 grid gap-6 md:grid-cols-3"
+          >
+            {journeySteps.map((step, index) => (
+              <motion.li
+                key={step.title}
+                variants={reveal}
+                className="rounded-3xl border border-border bg-surface/70 p-7 backdrop-blur-sm md:p-8"
+              >
+                <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-accent/30 bg-accent/10 font-mono text-sm font-semibold text-accent">
+                  {String(index + 1).padStart(2, "0")}
+                </div>
+                <h3 className="mt-5 text-xl font-semibold text-text">{step.title}</h3>
+                <p className="mt-3 text-sm leading-relaxed text-text-2">{step.description}</p>
+              </motion.li>
+            ))}
+          </motion.ol>
+        </div>
+      </section>
+
+      <section className="relative z-10 pb-20">
+        <div className="mx-auto max-w-7xl px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+            className="mx-auto max-w-3xl text-center"
+          >
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">Reassurance</p>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight text-text md:text-5xl">
+              Pourquoi tu peux faire confiance a Pulse
+            </h2>
+          </motion.div>
+
+          <motion.div
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-80px" }}
+            variants={container}
+            className="mt-12 grid gap-5 md:grid-cols-3"
+          >
+            {trustPillars.map((pillar) => {
+              const Icon = pillar.icon;
               return (
                 <motion.article
-                  key={feature.title}
+                  key={pillar.title}
                   variants={reveal}
-                  className={`${feature.bento} group relative overflow-hidden rounded-3xl border border-border bg-surface/75 p-5 backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-accent/35 hover:bg-surface-hover hover:shadow-glow-sm md:p-6`}
+                  className="rounded-3xl border border-border bg-surface/70 p-7 backdrop-blur-sm md:p-8"
                 >
-                  <div className="pointer-events-none absolute -right-5 -top-6 h-16 w-16 rounded-full bg-accent/15 blur-2xl" />
-                  <div className="relative">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted">
-                          {feature.eyebrow}
-                        </p>
-                        <h3 className="mt-2 text-lg font-semibold leading-tight text-text md:text-xl">{feature.title}</h3>
-                      </div>
-                      <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-border bg-surface-2 text-accent transition-colors duration-300 group-hover:border-accent/30">
-                        <Icon size={18} />
-                      </span>
-                    </div>
-
-                    <p className="mt-3 text-sm leading-relaxed text-text-2">{feature.description}</p>
-
-                    <div className="mt-4 rounded-xl border border-border bg-surface-2/70 px-3 py-2">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-text-muted">Signal</p>
-                      <p className="mt-1 text-xs text-text">{feature.signal}</p>
-                      <div className="mt-2 h-1.5 rounded-full bg-border">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          whileInView={{ width: `${indicatorWidth}%` }}
-                          viewport={{ once: true }}
-                          transition={{ duration: 0.7, delay: 0.08 * index }}
-                          className="h-full rounded-full bg-accent"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {feature.outcomes.map((outcome) => (
-                        <span
-                          key={outcome}
-                          className="rounded-full border border-border bg-surface-2/75 px-2.5 py-1 text-[11px] text-text-2"
-                        >
-                          {outcome}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+                  <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-surface-2 text-accent">
+                    <Icon size={20} />
+                  </span>
+                  <h3 className="mt-5 text-xl font-semibold text-text">{pillar.title}</h3>
+                  <p className="mt-3 text-sm leading-relaxed text-text-2">{pillar.description}</p>
+                  <p className="mt-5 text-xs font-semibold uppercase tracking-[0.12em] text-accent">
+                    {pillar.proof}
+                  </p>
                 </motion.article>
               );
             })}
