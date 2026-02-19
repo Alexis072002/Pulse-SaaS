@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 type QueueJobStatus = "WAITING" | "ACTIVE" | "COMPLETED" | "FAILED";
 type QueueHandler<TPayload> = (payload: TPayload) => Promise<void>;
 
-interface QueueJobRecord {
+export interface QueueJobRecord {
   id: string;
   name: string;
   status: QueueJobStatus;
@@ -44,6 +44,30 @@ export class QueueService {
 
   getStatus(jobId: string): QueueJobRecord | null {
     return this.jobs.get(jobId) ?? null;
+  }
+
+  listJobs(limit = 100): QueueJobRecord[] {
+    const safeLimit = Math.max(1, Math.min(limit, 500));
+    return [...this.jobs.values()]
+      .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime())
+      .slice(0, safeLimit);
+  }
+
+  getStats(): {
+    total: number;
+    waiting: number;
+    active: number;
+    completed: number;
+    failed: number;
+  } {
+    const all = [...this.jobs.values()];
+    return {
+      total: all.length,
+      waiting: all.filter((job) => job.status === "WAITING").length,
+      active: all.filter((job) => job.status === "ACTIVE").length,
+      completed: all.filter((job) => job.status === "COMPLETED").length,
+      failed: all.filter((job) => job.status === "FAILED").length
+    };
   }
 
   private async process<TPayload>(jobId: string, jobName: string, payload: TPayload): Promise<void> {

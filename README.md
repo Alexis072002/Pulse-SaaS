@@ -37,6 +37,20 @@ Pulse est un SaaS analytics multi-plateforme (YouTube + GA4) basé sur `Next.js 
 - Après callback, un cookie `pulse_access_token` est créé et les routes dashboard sont protégées.
 - Les tokens Google sont chiffrés côté backend avant stockage (`AES-256-GCM`).
 
+## Ops panel caché
+
+- URL: `/internal/ops` (non présent dans la sidebar).
+- Si `OPS_PANEL_KEY` est défini dans `.env`, l'accès nécessite `?key=...` dans l'URL.
+- Endpoints backend exposés:
+  - `GET /ops/health`
+  - `GET /ops/metrics`
+  - `GET /ops/logs?limit=120`
+
+## Mode 0€ (sans OpenAI)
+
+- `OPENAI_API_KEY` peut rester vide.
+- Le digest rapport utilise un moteur heuristique local (aucun coût API).
+
 ## Tests
 
 - `pnpm --filter @pulse/backend test` (unit tests locaux)

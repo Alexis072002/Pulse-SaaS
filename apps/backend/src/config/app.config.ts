@@ -7,5 +7,6 @@ export default registerAs("app", () => ({
   jwtSecret: process.env.JWT_SECRET ?? "",
   jwtExpiration: process.env.JWT_EXPIRATION ?? "15m",
   jwtRefreshExpiration: process.env.JWT_REFRESH_EXPIRATION ?? "7d",
+  opsPanelKey: process.env.OPS_PANEL_KEY ?? "",
   openAiModel: process.env.OPENAI_MODEL ?? "gpt-4o-mini"
 }));

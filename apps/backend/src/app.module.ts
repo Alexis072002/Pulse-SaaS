@@ -11,6 +11,7 @@ import { validationSchema } from "~/config/validation.schema";
 import { AiModule } from "~/modules/ai/ai.module";
 import { AnalyticsModule } from "~/modules/analytics/analytics.module";
 import { AuthModule } from "~/modules/auth/auth.module";
+import { OpsModule } from "~/modules/ops/ops.module";
 import { QueueModule } from "~/modules/queue/queue.module";
 import { ReportsModule } from "~/modules/reports/reports.module";
 
@@ -30,6 +31,7 @@ import { ReportsModule } from "~/modules/reports/reports.module";
     ]),
     AuthModule,
     AnalyticsModule,
+    OpsModule,
     ReportsModule,
     AiModule,
     QueueModule

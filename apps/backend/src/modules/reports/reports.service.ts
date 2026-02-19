@@ -5,6 +5,7 @@ import { Prisma, ReportStatus, ReportType, type Report } from "@prisma/client";
 import { CacheService } from "~/modules/analytics/cache.service";
 import { Period } from "~/modules/analytics/dto/get-overview.dto";
 import { AnalyticsService } from "~/modules/analytics/analytics.service";
+import { DigestService } from "~/modules/ai/digest/digest.service";
 import { JOBS } from "~/modules/queue/constants/queue.constants";
 import { QueueService } from "~/modules/queue/queue.service";
 import { EmailService } from "~/modules/reports/email/email.service";
@@ -59,6 +60,7 @@ export class ReportsService implements OnModuleInit {
     private readonly prismaService: PrismaService,
     private readonly queueService: QueueService,
     private readonly analyticsService: AnalyticsService,
+    private readonly digestService: DigestService,
     private readonly cacheService: CacheService,
     private readonly pdfService: PdfService,
     private readonly emailService: EmailService
@@ -319,14 +321,13 @@ export class ReportsService implements OnModuleInit {
     youtubeDelta: number,
     sessionsDelta: number
   ): string {
-    const scope = type === ReportType.WEEKLY ? "weekly" : "monthly";
-    const trendYouTube = youtubeDelta >= 0 ? "up" : "down";
-    const trendWeb = sessionsDelta >= 0 ? "up" : "down";
-
-    return [
-      `This ${scope} report shows YouTube reach ${trendYouTube} at ${youtubeViews} views, while web traffic is ${trendWeb} at ${webSessions} sessions.`,
-      `Pulse score is currently ${pulseScore}, indicating the global momentum of your acquisition funnel.`,
-      "Focus next cycle on the topics that drive both retention and click-through to your website."
-    ].join(" ");
+    return this.digestService.generateHeuristicDigest({
+      reportType: type,
+      youtubeViews,
+      webSessions,
+      pulseScore,
+      youtubeDelta,
+      sessionsDelta
+    });
   }
 }
