@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run --passWithNoTests",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "perf:lighthouse": "lhci autorun --config=./lighthouserc.json"
   },
   "dependencies": {
     "@pulse/shared": "workspace:*",
@@ -28,6 +29,7 @@
     "zustand": "^5.0.3"
   },
   "devDependencies": {
+    "@lhci/cli": "^0.15.0",
     "@types/node": "^22.13.1",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",

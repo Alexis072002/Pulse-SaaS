@@ -10,6 +10,8 @@ import { JwtService } from "@nestjs/jwt";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "~/prisma/prisma.service";
 import { TokenCryptoService } from "~/common/security/token-crypto.service";
+import { AuditService } from "~/modules/audit/audit.service";
+import { WorkspaceService } from "~/modules/workspace/workspace.service";
 
 export interface GoogleTokenSet {
   accessToken: string;
@@ -60,7 +62,9 @@ export class AuthService {
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
     private readonly prismaService: PrismaService,
-    private readonly tokenCryptoService: TokenCryptoService
+    private readonly tokenCryptoService: TokenCryptoService,
+    private readonly workspaceService: WorkspaceService,
+    private readonly auditService: AuditService
   ) {}
 
   getGoogleAuthUrl(gaPropertyId?: string, rememberMe = false): string {
@@ -115,6 +119,10 @@ export class AuthService {
     };
 
     await this.persistSession(session);
+    const workspace = await this.workspaceService.ensureDefaultWorkspace(profile.id, profile.email);
+    await this.auditService.logUserAction(workspace.workspaceId, profile.id, "LOGIN_SUCCESS", {
+      rememberMe: statePayload?.rememberMe === true
+    });
 
     const jwt = this.jwtService.sign({
       sub: profile.id,
@@ -150,12 +158,18 @@ export class AuthService {
   }
 
   async clearSession(userId: string): Promise<void> {
+    const workspace = await this.workspaceService.getActiveWorkspaceContext(userId).catch(() => null);
+
     await this.prismaService.user.updateMany({
       where: { id: userId },
       data: {
         googleTokens: Prisma.DbNull
       }
     });
+
+    if (workspace) {
+      await this.auditService.logUserAction(workspace.workspaceId, userId, "LOGOUT");
+    }
   }
 
   async setGaPropertyId(userId: string, gaPropertyId: string): Promise<void> {

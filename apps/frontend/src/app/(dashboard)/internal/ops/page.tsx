@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { Activity, Database, HardDrive, HeartPulse, ShieldAlert, Timer, Workflow } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { PageWrapper } from "@/components/layout/PageWrapper";
-import { formatBytes, getOpsHealth, getOpsLogs, getOpsMetrics, type OpsLogEntry } from "@/lib/api/ops";
+import { formatBytes, getOpsAudit, getOpsHealth, getOpsLogs, getOpsMetrics, type OpsAuditEntry, type OpsLogEntry } from "@/lib/api/ops";
 
 function formatUptime(seconds: number): string {
   const days = Math.floor(seconds / 86_400);
@@ -45,12 +45,14 @@ export default async function OpsPage({
   let health: Awaited<ReturnType<typeof getOpsHealth>>;
   let metrics: Awaited<ReturnType<typeof getOpsMetrics>>;
   let logs: OpsLogEntry[];
+  let audit: OpsAuditEntry[];
 
   try {
-    [health, metrics, logs] = await Promise.all([
+    [health, metrics, logs, audit] = await Promise.all([
       getOpsHealth({ key: panelKey }),
       getOpsMetrics({ key: panelKey }),
-      getOpsLogs(120, { key: panelKey })
+      getOpsLogs(120, { key: panelKey }),
+      getOpsAudit(80, { key: panelKey })
     ]);
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHENTICATED") {
@@ -145,6 +147,10 @@ export default async function OpsPage({
           </div>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <div className="rounded-xl border border-border bg-surface-2 px-3 py-2">
+              <p className="text-xs text-text-muted">Workspaces</p>
+              <p className="mt-1 font-mono text-xl text-text">{metrics.counts.workspaces}</p>
+            </div>
+            <div className="rounded-xl border border-border bg-surface-2 px-3 py-2">
               <p className="text-xs text-text-muted">Users</p>
               <p className="mt-1 font-mono text-xl text-text">{metrics.counts.users}</p>
             </div>
@@ -159,6 +165,10 @@ export default async function OpsPage({
             <div className="rounded-xl border border-border bg-surface-2 px-3 py-2">
               <p className="text-xs text-text-muted">Digests</p>
               <p className="mt-1 font-mono text-xl text-text">{metrics.counts.digests}</p>
+            </div>
+            <div className="rounded-xl border border-border bg-surface-2 px-3 py-2">
+              <p className="text-xs text-text-muted">Audit logs</p>
+              <p className="mt-1 font-mono text-xl text-text">{metrics.counts.auditLogs}</p>
             </div>
           </div>
         </article>
@@ -217,6 +227,35 @@ export default async function OpsPage({
                   </td>
                   <td className="whitespace-nowrap px-3 py-2 font-mono text-xs text-text">{log.durationMs} ms</td>
                   <td className="whitespace-nowrap px-3 py-2 font-mono text-xs text-text-muted">{log.requestId.slice(0, 8)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="glass overflow-hidden rounded-2xl">
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <h3 className="text-base font-semibold text-text">Audit trail</h3>
+          <span className="text-xs text-text-muted">{audit.length} événements</span>
+        </div>
+        <div className="max-h-[360px] overflow-auto">
+          <table className="min-w-full">
+            <thead>
+              <tr className="border-b border-border/80">
+                <th className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted">Time</th>
+                <th className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted">Action</th>
+                <th className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted">Actor</th>
+                <th className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted">Workspace</th>
+              </tr>
+            </thead>
+            <tbody>
+              {audit.map((event) => (
+                <tr key={event.id} className="border-b border-border/50 last:border-0">
+                  <td className="whitespace-nowrap px-3 py-2 text-xs text-text-2">{new Date(event.createdAt).toLocaleString("fr-FR")}</td>
+                  <td className="px-3 py-2 text-xs text-text">{event.action}</td>
+                  <td className="px-3 py-2 text-xs text-text-2">{event.actorType}{event.actorUserId ? `:${event.actorUserId.slice(0, 6)}` : ""}</td>
+                  <td className="px-3 py-2 font-mono text-xs text-text-muted">{event.workspaceId.slice(0, 8)}</td>
                 </tr>
               ))}
             </tbody>

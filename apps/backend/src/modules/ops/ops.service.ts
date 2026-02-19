@@ -74,20 +74,24 @@ export class OpsService {
   async getMetrics(): Promise<{
     timestamp: string;
     counts: {
+      workspaces: number;
       users: number;
       reports: number;
       snapshots: number;
       digests: number;
+      auditLogs: number;
     };
     reportsByStatus: Record<ReportStatus, number>;
     requests: ReturnType<typeof LoggingInterceptor.getSummary>;
     queue: ReturnType<QueueService["getStats"]>;
   }> {
-    const [users, reports, snapshots, digests, groupedReports] = await Promise.all([
+    const [workspaces, users, reports, snapshots, digests, auditLogs, groupedReports] = await Promise.all([
+      this.prismaService.workspace.count(),
       this.prismaService.user.count(),
       this.prismaService.report.count(),
       this.prismaService.analyticsSnapshot.count(),
       this.prismaService.aiDigest.count(),
+      this.prismaService.auditLog.count(),
       this.prismaService.report.groupBy({
         by: ["status"],
         _count: {
@@ -98,6 +102,7 @@ export class OpsService {
 
     const reportsByStatus: Record<ReportStatus, number> = {
       PENDING: 0,
+      PROCESSING: 0,
       DONE: 0,
       FAILED: 0
     };
@@ -109,10 +114,12 @@ export class OpsService {
     return {
       timestamp: new Date().toISOString(),
       counts: {
+        workspaces,
         users,
         reports,
         snapshots,
-        digests
+        digests,
+        auditLogs
       },
       reportsByStatus,
       requests: LoggingInterceptor.getSummary(),
@@ -122,5 +129,31 @@ export class OpsService {
 
   getLogs(limit = 120): ReturnType<typeof LoggingInterceptor.getRecentLogs> {
     return LoggingInterceptor.getRecentLogs(limit);
+  }
+
+  async getAuditLogs(limit = 120): Promise<Array<{
+    id: string;
+    createdAt: Date;
+    action: string;
+    actorType: string;
+    actorUserId: string | null;
+    workspaceId: string;
+    metadata: unknown;
+  }>> {
+    const safeLimit = Math.max(1, Math.min(limit, 500));
+    const rows = await this.prismaService.auditLog.findMany({
+      orderBy: { createdAt: "desc" },
+      take: safeLimit
+    });
+
+    return rows.map((row) => ({
+      id: row.id,
+      createdAt: row.createdAt,
+      action: row.action,
+      actorType: row.actorType,
+      actorUserId: row.actorUserId,
+      workspaceId: row.workspaceId,
+      metadata: row.metadata
+    }));
   }
 }

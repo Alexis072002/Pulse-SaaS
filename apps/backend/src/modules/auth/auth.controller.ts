@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Query, Res } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { Response } from "express";
+import { RouteRateLimit } from "~/common/decorators/route-rate-limit.decorator";
 import { CurrentUser } from "~/common/decorators/current-user.decorator";
 import { Public } from "~/common/decorators/public.decorator";
 import { AuthService } from "~/modules/auth/auth.service";
@@ -13,6 +14,7 @@ export class AuthController {
   ) {}
 
   @Public()
+  @RouteRateLimit({ limit: 20, windowMs: 60_000 })
   @Get("google")
   async googleRedirect(
     @Res() response: Response,
@@ -25,6 +27,7 @@ export class AuthController {
   }
 
   @Public()
+  @RouteRateLimit({ limit: 30, windowMs: 60_000 })
   @Get("google/callback")
   async googleCallback(
     @Res() response: Response,
@@ -51,6 +54,7 @@ export class AuthController {
   }
 
   @Post("logout")
+  @RouteRateLimit({ limit: 20, windowMs: 60_000 })
   async logout(
     @CurrentUser() user: { id: string } | undefined,
     @Res({ passthrough: true }) response: Response

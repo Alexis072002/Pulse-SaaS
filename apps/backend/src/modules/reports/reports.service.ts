@@ -1,15 +1,32 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { BadRequestException, Injectable, NotFoundException, OnModuleInit } from "@nestjs/common";
-import { Prisma, ReportStatus, ReportType, type Report } from "@prisma/client";
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  OnModuleDestroy,
+  OnModuleInit
+} from "@nestjs/common";
+import {
+  DeliveryChannel,
+  DeliveryStatus,
+  Prisma,
+  ReportStatus,
+  ReportType,
+  type Report,
+  type ReportDelivery,
+  type ReportSchedule
+} from "@prisma/client";
+import { AuditService } from "~/modules/audit/audit.service";
+import { DigestService } from "~/modules/ai/digest/digest.service";
+import { AnalyticsService } from "~/modules/analytics/analytics.service";
 import { CacheService } from "~/modules/analytics/cache.service";
 import { Period } from "~/modules/analytics/dto/get-overview.dto";
-import { AnalyticsService } from "~/modules/analytics/analytics.service";
-import { DigestService } from "~/modules/ai/digest/digest.service";
 import { JOBS } from "~/modules/queue/constants/queue.constants";
 import { QueueService } from "~/modules/queue/queue.service";
 import { EmailService } from "~/modules/reports/email/email.service";
 import { PdfService } from "~/modules/reports/pdf/pdf.service";
+import { WorkspaceService } from "~/modules/workspace/workspace.service";
 import { PrismaService } from "~/prisma/prisma.service";
 
 const REPORTS_CACHE_TTL_SECONDS = 60;
@@ -18,11 +35,14 @@ const REPORT_OUTPUT_DIR = "/tmp/pulse-reports";
 interface GenerateReportJobPayload {
   reportId: string;
   userId: string;
+  workspaceId: string;
 }
 
 interface SendReportEmailJobPayload {
   reportId: string;
   userId: string;
+  workspaceId: string;
+  deliveryId?: string;
 }
 
 interface ReportPeriodRange {
@@ -35,9 +55,34 @@ export interface ListReportsFilters {
   status?: ReportStatus;
 }
 
+export interface ReportDeliveryItem {
+  id: string;
+  channel: DeliveryChannel;
+  status: DeliveryStatus;
+  recipient: string | null;
+  attempts: number;
+  sentAt: Date | null;
+  errorMsg: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ReportScheduleItem {
+  id: string;
+  type: ReportType;
+  enabled: boolean;
+  dayOfWeek: number | null;
+  dayOfMonth: number | null;
+  hourUtc: number;
+  minuteUtc: number;
+  lastRunAt: Date | null;
+  updatedAt: Date;
+}
+
 export interface ReportListItem {
   id: string;
   userId: string;
+  workspaceId: string;
   type: ReportType;
   status: ReportStatus;
   periodStart: Date;
@@ -45,6 +90,7 @@ export interface ReportListItem {
   pdfUrl: string | null;
   aiDigest: string | null;
   errorMsg: string | null;
+  deliveries: ReportDeliveryItem[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -54,8 +100,18 @@ export interface ReportDownloadPayload {
   content: Buffer;
 }
 
+export interface UpdateScheduleInput {
+  enabled?: boolean;
+  dayOfWeek?: number;
+  dayOfMonth?: number;
+  hourUtc?: number;
+  minuteUtc?: number;
+}
+
 @Injectable()
-export class ReportsService implements OnModuleInit {
+export class ReportsService implements OnModuleInit, OnModuleDestroy {
+  private schedulerTimer?: NodeJS.Timeout;
+
   constructor(
     private readonly prismaService: PrismaService,
     private readonly queueService: QueueService,
@@ -63,7 +119,9 @@ export class ReportsService implements OnModuleInit {
     private readonly digestService: DigestService,
     private readonly cacheService: CacheService,
     private readonly pdfService: PdfService,
-    private readonly emailService: EmailService
+    private readonly emailService: EmailService,
+    private readonly workspaceService: WorkspaceService,
+    private readonly auditService: AuditService
   ) {}
 
   onModuleInit(): void {
@@ -74,13 +132,26 @@ export class ReportsService implements OnModuleInit {
     this.queueService.register<SendReportEmailJobPayload>(JOBS.SEND_REPORT, async (payload) => {
       await this.processReportEmail(payload);
     });
+
+    this.schedulerTimer = setInterval(() => {
+      void this.processSchedules();
+    }, 60_000);
+  }
+
+  onModuleDestroy(): void {
+    if (this.schedulerTimer) {
+      clearInterval(this.schedulerTimer);
+      this.schedulerTimer = undefined;
+    }
   }
 
   async listReports(userId: string, filters: ListReportsFilters = {}): Promise<ReportListItem[]> {
-    const cacheKey = this.getListCacheKey(userId, filters);
+    const workspace = await this.workspaceService.getActiveWorkspaceContext(userId);
+    const cacheKey = this.getListCacheKey(workspace.workspaceId, filters);
+
     return this.cacheService.wrap(cacheKey, REPORTS_CACHE_TTL_SECONDS, async () => {
       const where: Prisma.ReportWhereInput = {
-        userId
+        workspaceId: workspace.workspaceId
       };
 
       if (filters.type) {
@@ -94,7 +165,13 @@ export class ReportsService implements OnModuleInit {
       const reports = await this.prismaService.report.findMany({
         where,
         orderBy: { createdAt: "desc" },
-        take: 50
+        take: 60,
+        include: {
+          deliveries: {
+            orderBy: { createdAt: "desc" },
+            take: 5
+          }
+        }
       });
 
       return reports.map((report) => this.toListItem(report));
@@ -102,30 +179,14 @@ export class ReportsService implements OnModuleInit {
   }
 
   async createReport(userId: string, type: ReportType = ReportType.WEEKLY): Promise<ReportListItem> {
-    const range = this.computeRange(type);
-
-    const report = await this.prismaService.report.create({
-      data: {
-        userId,
-        type,
-        status: ReportStatus.PENDING,
-        periodStart: range.start,
-        periodEnd: range.end
-      }
-    });
-
-    await this.invalidateListCache(userId);
-    await this.queueService.enqueue<GenerateReportJobPayload>(JOBS.GENERATE_REPORT, {
-      reportId: report.id,
-      userId
-    });
-
-    return this.toListItem(report);
+    const workspace = await this.workspaceService.getActiveWorkspaceContext(userId);
+    return this.createReportForWorkspace(workspace.workspaceId, userId, type, "REPORT_GENERATE_REQUESTED");
   }
 
   async retryReport(reportId: string, userId: string): Promise<ReportListItem> {
-    const report = await this.getOwnedReport(reportId, userId);
-    if (report.status === ReportStatus.PENDING) {
+    const workspace = await this.workspaceService.getActiveWorkspaceContext(userId);
+    const report = await this.getOwnedReport(reportId, workspace.workspaceId);
+    if (report.status === ReportStatus.PENDING || report.status === ReportStatus.PROCESSING) {
       throw new BadRequestException("Report is already in progress.");
     }
 
@@ -135,20 +196,78 @@ export class ReportsService implements OnModuleInit {
         status: ReportStatus.PENDING,
         errorMsg: null,
         pdfUrl: null
+      },
+      include: {
+        deliveries: {
+          orderBy: { createdAt: "desc" },
+          take: 5
+        }
       }
     });
 
-    await this.invalidateListCache(userId);
+    await this.auditService.logUserAction(workspace.workspaceId, userId, "REPORT_RETRY_REQUESTED", {
+      reportId
+    });
+
+    await this.invalidateListCache(workspace.workspaceId);
     await this.queueService.enqueue<GenerateReportJobPayload>(JOBS.GENERATE_REPORT, {
       reportId: reset.id,
-      userId
+      userId: report.userId,
+      workspaceId: report.workspaceId
     });
 
     return this.toListItem(reset);
   }
 
+  async retryDelivery(reportId: string, deliveryId: string, userId: string): Promise<ReportListItem> {
+    const workspace = await this.workspaceService.getActiveWorkspaceContext(userId);
+    const report = await this.getOwnedReport(reportId, workspace.workspaceId);
+    const delivery = await this.prismaService.reportDelivery.findFirst({
+      where: {
+        id: deliveryId,
+        reportId: report.id,
+        workspaceId: workspace.workspaceId
+      }
+    });
+
+    if (!delivery) {
+      throw new NotFoundException("Delivery not found.");
+    }
+
+    await this.queueService.enqueue<SendReportEmailJobPayload>(JOBS.SEND_REPORT, {
+      reportId: report.id,
+      userId: report.userId,
+      workspaceId: workspace.workspaceId,
+      deliveryId: delivery.id
+    });
+
+    await this.auditService.logUserAction(workspace.workspaceId, userId, "REPORT_DELIVERY_RETRY_REQUESTED", {
+      reportId,
+      deliveryId
+    });
+
+    await this.invalidateListCache(workspace.workspaceId);
+
+    const refreshed = await this.prismaService.report.findUnique({
+      where: { id: report.id },
+      include: {
+        deliveries: {
+          orderBy: { createdAt: "desc" },
+          take: 5
+        }
+      }
+    });
+
+    if (!refreshed) {
+      throw new NotFoundException("Report not found after delivery retry.");
+    }
+
+    return this.toListItem(refreshed);
+  }
+
   async getDownload(reportId: string, userId: string): Promise<ReportDownloadPayload> {
-    const report = await this.getOwnedReport(reportId, userId);
+    const workspace = await this.workspaceService.getActiveWorkspaceContext(userId);
+    const report = await this.getOwnedReport(reportId, workspace.workspaceId);
     if (report.status !== ReportStatus.DONE || !report.pdfUrl) {
       throw new BadRequestException("Report PDF is not available yet.");
     }
@@ -158,13 +277,179 @@ export class ReportsService implements OnModuleInit {
     return { fileName, content };
   }
 
+  async listSchedules(userId: string): Promise<ReportScheduleItem[]> {
+    const workspace = await this.workspaceService.getActiveWorkspaceContext(userId);
+    await this.ensureDefaultSchedules(workspace.workspaceId);
+
+    const schedules = await this.prismaService.reportSchedule.findMany({
+      where: {
+        workspaceId: workspace.workspaceId
+      },
+      orderBy: [{ type: "asc" }]
+    });
+
+    return schedules.map((schedule) => this.toScheduleItem(schedule));
+  }
+
+  async updateSchedule(userId: string, type: ReportType, input: UpdateScheduleInput): Promise<ReportScheduleItem> {
+    const workspace = await this.workspaceService.getActiveWorkspaceContext(userId);
+    await this.ensureDefaultSchedules(workspace.workspaceId);
+
+    const existing = await this.prismaService.reportSchedule.findUnique({
+      where: {
+        workspaceId_type: {
+          workspaceId: workspace.workspaceId,
+          type
+        }
+      }
+    });
+
+    if (!existing) {
+      throw new NotFoundException("Report schedule not found.");
+    }
+
+    const next = await this.prismaService.reportSchedule.update({
+      where: {
+        workspaceId_type: {
+          workspaceId: workspace.workspaceId,
+          type
+        }
+      },
+      data: {
+        enabled: input.enabled ?? existing.enabled,
+        dayOfWeek: input.dayOfWeek ?? existing.dayOfWeek,
+        dayOfMonth: input.dayOfMonth ?? existing.dayOfMonth,
+        hourUtc: input.hourUtc ?? existing.hourUtc,
+        minuteUtc: input.minuteUtc ?? existing.minuteUtc
+      }
+    });
+
+    await this.auditService.logUserAction(workspace.workspaceId, userId, "REPORT_SCHEDULE_UPDATED", {
+      type,
+      enabled: next.enabled,
+      dayOfWeek: next.dayOfWeek,
+      dayOfMonth: next.dayOfMonth,
+      hourUtc: next.hourUtc,
+      minuteUtc: next.minuteUtc
+    });
+
+    return this.toScheduleItem(next);
+  }
+
+  private async createReportForWorkspace(
+    workspaceId: string,
+    userId: string,
+    type: ReportType,
+    auditAction: string
+  ): Promise<ReportListItem> {
+    const range = this.computeRange(type);
+
+    const report = await this.prismaService.report.create({
+      data: {
+        userId,
+        workspaceId,
+        type,
+        status: ReportStatus.PENDING,
+        periodStart: range.start,
+        periodEnd: range.end
+      },
+      include: {
+        deliveries: {
+          orderBy: { createdAt: "desc" },
+          take: 5
+        }
+      }
+    });
+
+    await this.auditService.logUserAction(workspaceId, userId, auditAction, {
+      reportId: report.id,
+      type
+    });
+
+    await this.invalidateListCache(workspaceId);
+    await this.queueService.enqueue<GenerateReportJobPayload>(JOBS.GENERATE_REPORT, {
+      reportId: report.id,
+      userId,
+      workspaceId
+    });
+
+    return this.toListItem(report);
+  }
+
+  private async processSchedules(): Promise<void> {
+    const now = new Date();
+    const schedules = await this.prismaService.reportSchedule.findMany({
+      where: {
+        enabled: true
+      },
+      include: {
+        workspace: {
+          select: {
+            ownerId: true
+          }
+        }
+      }
+    });
+
+    for (const schedule of schedules) {
+      if (!this.isScheduleDue(schedule, now)) {
+        continue;
+      }
+
+      const lastRunAt = schedule.lastRunAt;
+      if (lastRunAt && this.isSameMinute(lastRunAt, now)) {
+        continue;
+      }
+
+      await this.prismaService.reportSchedule.update({
+        where: { id: schedule.id },
+        data: {
+          lastRunAt: now
+        }
+      });
+
+      await this.createReportForWorkspace(
+        schedule.workspaceId,
+        schedule.workspace.ownerId,
+        schedule.type,
+        "REPORT_GENERATE_SCHEDULED"
+      );
+    }
+  }
+
+  private isScheduleDue(schedule: ReportSchedule, now: Date): boolean {
+    if (!schedule.enabled) {
+      return false;
+    }
+
+    if (now.getUTCHours() !== schedule.hourUtc || now.getUTCMinutes() !== schedule.minuteUtc) {
+      return false;
+    }
+
+    if (schedule.type === ReportType.WEEKLY) {
+      const target = schedule.dayOfWeek ?? 1;
+      return now.getUTCDay() === target;
+    }
+
+    const targetDay = schedule.dayOfMonth ?? 1;
+    return now.getUTCDate() === targetDay;
+  }
+
   private async processReportGeneration(payload: GenerateReportJobPayload): Promise<void> {
     const report = await this.prismaService.report.findUnique({
       where: { id: payload.reportId }
     });
-    if (!report || report.userId !== payload.userId) {
+    if (!report || report.userId !== payload.userId || report.workspaceId !== payload.workspaceId) {
       return;
     }
+
+    await this.prismaService.report.update({
+      where: { id: report.id },
+      data: {
+        status: ReportStatus.PROCESSING,
+        errorMsg: null
+      }
+    });
 
     try {
       const period = report.type === ReportType.WEEKLY ? Period.SEVEN_DAYS : Period.THIRTY_DAYS;
@@ -173,7 +458,7 @@ export class ReportsService implements OnModuleInit {
         this.analyticsService.getYoutubeStats(period, report.userId),
         this.analyticsService.getGa4Stats(period, report.userId).catch(() => null),
         this.prismaService.aiDigest.findFirst({
-          where: { userId: report.userId },
+          where: { workspaceId: report.workspaceId },
           orderBy: { weekStart: "desc" }
         })
       ]);
@@ -214,10 +499,16 @@ export class ReportsService implements OnModuleInit {
         }
       });
 
-      await this.invalidateListCache(report.userId);
+      await this.auditService.logSystemAction(report.workspaceId, "REPORT_GENERATED", {
+        reportId: report.id,
+        type: report.type
+      });
+
+      await this.invalidateListCache(report.workspaceId);
       await this.queueService.enqueue<SendReportEmailJobPayload>(JOBS.SEND_REPORT, {
         reportId: report.id,
-        userId: report.userId
+        userId: report.userId,
+        workspaceId: report.workspaceId
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Report generation failed.";
@@ -228,41 +519,120 @@ export class ReportsService implements OnModuleInit {
           errorMsg: message
         }
       });
-      await this.invalidateListCache(report.userId);
+
+      await this.auditService.logSystemAction(report.workspaceId, "REPORT_GENERATION_FAILED", {
+        reportId: report.id,
+        message
+      });
+
+      await this.invalidateListCache(report.workspaceId);
     }
   }
 
   private async processReportEmail(payload: SendReportEmailJobPayload): Promise<void> {
     const report = await this.prismaService.report.findUnique({
-      where: { id: payload.reportId }
+      where: { id: payload.reportId },
+      include: {
+        user: {
+          select: {
+            email: true
+          }
+        }
+      }
     });
-    if (!report || report.userId !== payload.userId || report.status !== ReportStatus.DONE) {
+
+    if (!report || report.userId !== payload.userId || report.workspaceId !== payload.workspaceId || report.status !== ReportStatus.DONE) {
       return;
     }
 
-    await this.emailService.sendReportReadyEmail({
-      userId: report.userId,
-      reportId: report.id,
-      reportType: report.type
-    });
+    const delivery = payload.deliveryId
+      ? await this.prismaService.reportDelivery.findFirst({
+          where: {
+            id: payload.deliveryId,
+            reportId: report.id,
+            workspaceId: report.workspaceId
+          }
+        })
+      : await this.prismaService.reportDelivery.create({
+          data: {
+            workspaceId: report.workspaceId,
+            reportId: report.id,
+            channel: DeliveryChannel.EMAIL,
+            status: DeliveryStatus.PENDING,
+            recipient: report.user.email
+          }
+        });
+
+    if (!delivery) {
+      return;
+    }
+
+    try {
+      await this.emailService.sendReportReadyEmail({
+        userId: report.userId,
+        reportId: report.id,
+        reportType: report.type
+      });
+
+      await this.prismaService.reportDelivery.update({
+        where: { id: delivery.id },
+        data: {
+          status: DeliveryStatus.SENT,
+          attempts: {
+            increment: 1
+          },
+          sentAt: new Date(),
+          errorMsg: null
+        }
+      });
+
+      await this.auditService.logSystemAction(report.workspaceId, "REPORT_DELIVERED", {
+        reportId: report.id,
+        deliveryId: delivery.id
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Report delivery failed.";
+      await this.prismaService.reportDelivery.update({
+        where: { id: delivery.id },
+        data: {
+          status: DeliveryStatus.FAILED,
+          attempts: {
+            increment: 1
+          },
+          errorMsg: message
+        }
+      });
+
+      await this.auditService.logSystemAction(report.workspaceId, "REPORT_DELIVERY_FAILED", {
+        reportId: report.id,
+        deliveryId: delivery.id,
+        message
+      });
+    }
+
+    await this.invalidateListCache(report.workspaceId);
   }
 
-  private async getOwnedReport(reportId: string, userId: string): Promise<Report> {
-    const report = await this.prismaService.report.findUnique({
-      where: { id: reportId }
+  private async getOwnedReport(reportId: string, workspaceId: string): Promise<Report> {
+    const report = await this.prismaService.report.findFirst({
+      where: {
+        id: reportId,
+        workspaceId
+      }
     });
 
-    if (!report || report.userId !== userId) {
+    if (!report) {
       throw new NotFoundException("Report not found.");
     }
 
     return report;
   }
 
-  private toListItem(report: Report): ReportListItem {
+  private toListItem(report: Report & { deliveries?: ReportDelivery[] }): ReportListItem {
     return {
       id: report.id,
       userId: report.userId,
+      workspaceId: report.workspaceId,
       type: report.type,
       status: report.status,
       periodStart: report.periodStart,
@@ -270,8 +640,37 @@ export class ReportsService implements OnModuleInit {
       pdfUrl: report.pdfUrl,
       aiDigest: report.aiDigest,
       errorMsg: report.errorMsg,
+      deliveries: (report.deliveries ?? []).map((delivery) => this.toDeliveryItem(delivery)),
       createdAt: report.createdAt,
       updatedAt: report.updatedAt
+    };
+  }
+
+  private toDeliveryItem(delivery: ReportDelivery): ReportDeliveryItem {
+    return {
+      id: delivery.id,
+      channel: delivery.channel,
+      status: delivery.status,
+      recipient: delivery.recipient,
+      attempts: delivery.attempts,
+      sentAt: delivery.sentAt,
+      errorMsg: delivery.errorMsg,
+      createdAt: delivery.createdAt,
+      updatedAt: delivery.updatedAt
+    };
+  }
+
+  private toScheduleItem(schedule: ReportSchedule): ReportScheduleItem {
+    return {
+      id: schedule.id,
+      type: schedule.type,
+      enabled: schedule.enabled,
+      dayOfWeek: schedule.dayOfWeek,
+      dayOfMonth: schedule.dayOfMonth,
+      hourUtc: schedule.hourUtc,
+      minuteUtc: schedule.minuteUtc,
+      lastRunAt: schedule.lastRunAt,
+      updatedAt: schedule.updatedAt
     };
   }
 
@@ -296,6 +695,16 @@ export class ReportsService implements OnModuleInit {
     return value.toISOString().slice(0, 10);
   }
 
+  private isSameMinute(left: Date, right: Date): boolean {
+    return (
+      left.getUTCFullYear() === right.getUTCFullYear() &&
+      left.getUTCMonth() === right.getUTCMonth() &&
+      left.getUTCDate() === right.getUTCDate() &&
+      left.getUTCHours() === right.getUTCHours() &&
+      left.getUTCMinutes() === right.getUTCMinutes()
+    );
+  }
+
   private async persistPdf(reportId: string, pdfContent: Buffer): Promise<string> {
     await mkdir(REPORT_OUTPUT_DIR, { recursive: true });
     const filePath = join(REPORT_OUTPUT_DIR, `${reportId}.pdf`);
@@ -303,14 +712,14 @@ export class ReportsService implements OnModuleInit {
     return filePath;
   }
 
-  private async invalidateListCache(userId: string): Promise<void> {
-    await this.cacheService.del(`pulse:reports:${userId}:list:*`);
+  private async invalidateListCache(workspaceId: string): Promise<void> {
+    await this.cacheService.del(`pulse:reports:${workspaceId}:list:*`);
   }
 
-  private getListCacheKey(userId: string, filters: ListReportsFilters): string {
+  private getListCacheKey(workspaceId: string, filters: ListReportsFilters): string {
     const type = filters.type ?? "ALL";
     const status = filters.status ?? "ALL";
-    return `pulse:reports:${userId}:list:${type}:${status}`;
+    return `pulse:reports:${workspaceId}:list:${type}:${status}`;
   }
 
   private composeDigest(
@@ -328,6 +737,30 @@ export class ReportsService implements OnModuleInit {
       pulseScore,
       youtubeDelta,
       sessionsDelta
+    });
+  }
+
+  private async ensureDefaultSchedules(workspaceId: string): Promise<void> {
+    await this.prismaService.reportSchedule.createMany({
+      data: [
+        {
+          workspaceId,
+          type: ReportType.WEEKLY,
+          enabled: true,
+          dayOfWeek: 1,
+          hourUtc: 9,
+          minuteUtc: 0
+        },
+        {
+          workspaceId,
+          type: ReportType.MONTHLY,
+          enabled: true,
+          dayOfMonth: 1,
+          hourUtc: 9,
+          minuteUtc: 0
+        }
+      ],
+      skipDuplicates: true
     });
   }
 }

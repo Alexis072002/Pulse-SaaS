@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BrainCircuit,
@@ -15,6 +16,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { useUiStore } from "@/store/ui-store";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 const items = [
   { href: "/overview", label: "Overview", icon: Home },
@@ -51,6 +54,41 @@ function PulseLogo({ collapsed }: { collapsed: boolean }): JSX.Element {
 export function Sidebar(): JSX.Element {
   const pathname = usePathname();
   const { sidebarCollapsed, toggleSidebar } = useUiStore();
+  const [workspace, setWorkspace] = useState<{ name: string; role: string } | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void fetch(`${API_URL}/workspace/context`, {
+      credentials: "include"
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          return null;
+        }
+        const payload = (await response.json()) as {
+          success?: boolean;
+          data?: { workspaceName?: string; role?: string };
+        };
+        if (!payload.success || !payload.data?.workspaceName || !payload.data.role) {
+          return null;
+        }
+        return {
+          name: payload.data.workspaceName,
+          role: payload.data.role
+        };
+      })
+      .then((data) => {
+        if (!active || !data) {
+          return;
+        }
+        setWorkspace(data);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <aside
@@ -139,8 +177,8 @@ export function Sidebar(): JSX.Element {
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden"
               >
-                <p className="truncate text-sm font-medium text-text">Utilisateur</p>
-                <p className="truncate text-xs text-text-muted">Pro Plan</p>
+                <p className="truncate text-sm font-medium text-text">{workspace?.name ?? "Workspace"}</p>
+                <p className="truncate text-xs uppercase tracking-[0.08em] text-text-muted">{workspace?.role ?? "viewer"}</p>
               </motion.div>
             )}
           </AnimatePresence>

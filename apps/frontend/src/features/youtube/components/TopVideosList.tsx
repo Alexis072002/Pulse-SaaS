@@ -56,6 +56,8 @@ export function TopVideosList({ videos }: TopVideosListProps): JSX.Element {
             <img
               src={video.thumbnailUrl}
               alt={video.title}
+              width={192}
+              height={108}
               className="h-14 w-24 rounded-lg border border-border object-cover md:h-16 md:w-24"
               loading="lazy"
             />

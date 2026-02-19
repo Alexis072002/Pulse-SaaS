@@ -1,4 +1,5 @@
 import { Controller, Get, Headers, Query } from "@nestjs/common";
+import { RouteRateLimit } from "~/common/decorators/route-rate-limit.decorator";
 import { GetLogsDto } from "~/modules/ops/dto/get-logs.dto";
 import { OpsService } from "~/modules/ops/ops.service";
 
@@ -7,6 +8,7 @@ export class OpsController {
   constructor(private readonly opsService: OpsService) {}
 
   @Get("health")
+  @RouteRateLimit({ limit: 60, windowMs: 60_000 })
   async health(
     @Headers("x-ops-key") keyFromHeader?: string,
     @Query("key") keyFromQuery?: string
@@ -16,6 +18,7 @@ export class OpsController {
   }
 
   @Get("metrics")
+  @RouteRateLimit({ limit: 60, windowMs: 60_000 })
   async metrics(
     @Headers("x-ops-key") keyFromHeader?: string,
     @Query("key") keyFromQuery?: string
@@ -25,11 +28,22 @@ export class OpsController {
   }
 
   @Get("logs")
+  @RouteRateLimit({ limit: 40, windowMs: 60_000 })
   async logs(
     @Headers("x-ops-key") keyFromHeader: string | undefined,
     @Query() query: GetLogsDto
   ): Promise<Awaited<ReturnType<OpsService["getLogs"]>>> {
     this.opsService.assertAccess(keyFromHeader ?? query.key);
     return this.opsService.getLogs(query.limit);
+  }
+
+  @Get("audit")
+  @RouteRateLimit({ limit: 30, windowMs: 60_000 })
+  async audit(
+    @Headers("x-ops-key") keyFromHeader: string | undefined,
+    @Query() query: GetLogsDto
+  ): Promise<Awaited<ReturnType<OpsService["getAuditLogs"]>>> {
+    this.opsService.assertAccess(keyFromHeader ?? query.key);
+    return this.opsService.getAuditLogs(query.limit);
   }
 }

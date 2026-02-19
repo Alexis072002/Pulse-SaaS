@@ -19,25 +19,117 @@ enum ReportType {
 
 enum ReportStatus {
   PENDING
+  PROCESSING
   DONE
   FAILED
 }
 
+enum WorkspaceRole {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
+  EXPIRED
+}
+
+enum DeliveryChannel {
+  EMAIL
+  IN_APP
+}
+
+enum DeliveryStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum AuditActorType {
+  USER
+  SYSTEM
+}
+
 model User {
-  id             String              @id @default(cuid())
-  email          String              @unique
-  googleTokens   Json?
-  youtubeChannelId String?
-  gaPropertyId   String?
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
-  snapshots      AnalyticsSnapshot[]
-  reports        Report[]
-  digests        AiDigest[]
+  id                String              @id @default(cuid())
+  email             String              @unique
+  googleTokens      Json?
+  youtubeChannelId  String?
+  gaPropertyId      String?
+  activeWorkspaceId String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  snapshots         AnalyticsSnapshot[]
+  reports           Report[]
+  digests           AiDigest[]
+  memberships       WorkspaceMember[]
+  ownedWorkspaces   Workspace[]         @relation("WorkspaceOwner")
+  activeWorkspace   Workspace?          @relation("ActiveWorkspace", fields: [activeWorkspaceId], references: [id], onDelete: SetNull)
+  auditLogs         AuditLog[]
+  rotatedSecrets    SecretVersion[]     @relation("SecretRotatedBy")
+
+  @@index([activeWorkspaceId])
+}
+
+model Workspace {
+  id               String               @id @default(cuid())
+  name             String
+  slug             String               @unique
+  ownerId          String
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  owner            User                 @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  activeUsers      User[]               @relation("ActiveWorkspace")
+  members          WorkspaceMember[]
+  invitations      WorkspaceInvitation[]
+  snapshots        AnalyticsSnapshot[]
+  reports          Report[]
+  reportDeliveries ReportDelivery[]
+  digests          AiDigest[]
+  schedules        ReportSchedule[]
+  secretVersions   SecretVersion[]
+  auditLogs        AuditLog[]
+
+  @@index([ownerId])
+}
+
+model WorkspaceMember {
+  id          String        @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        WorkspaceRole @default(VIEWER)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([userId, role])
+}
+
+model WorkspaceInvitation {
+  id          String           @id @default(cuid())
+  workspaceId String
+  email       String
+  role        WorkspaceRole    @default(VIEWER)
+  token       String           @unique
+  status      InvitationStatus @default(PENDING)
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  workspace   Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, status])
+  @@index([email, status])
 }
 
 model AnalyticsSnapshot {
-  id        String   @id @default(cuid())
+  id          String   @id @default(cuid())
+  workspaceId String
   userId    String
   source    Source
   date      DateTime
@@ -45,15 +137,18 @@ model AnalyticsSnapshot {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, source, date])
+  @@unique([workspaceId, userId, source, date])
+  @@index([workspaceId, source, date])
   @@index([userId, source, date])
 }
 
 model Report {
   id          String       @id @default(cuid())
   userId      String
+  workspaceId String
   type        ReportType
   status      ReportStatus @default(PENDING)
   periodStart DateTime
@@ -64,21 +159,95 @@ model Report {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace  Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  deliveries ReportDelivery[]
 
   @@index([userId, status])
+  @@index([workspaceId, status, createdAt])
 }
 
 model AiDigest {
-  id        String   @id @default(cuid())
-  userId    String
-  weekStart DateTime
-  content   String
-  metadata  Json?
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  workspaceId String
+  userId      String
+  weekStart   DateTime
+  content     String
+  metadata    Json?
+  createdAt   DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, weekStart])
+  @@unique([workspaceId, weekStart])
+  @@index([workspaceId, weekStart])
   @@index([userId, weekStart])
+}
+
+model ReportSchedule {
+  id          String     @id @default(cuid())
+  workspaceId String
+  type        ReportType
+  enabled     Boolean    @default(true)
+  dayOfWeek   Int?
+  dayOfMonth  Int?
+  hourUtc     Int        @default(9)
+  minuteUtc   Int        @default(0)
+  lastRunAt   DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  workspace   Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, type])
+  @@index([enabled, type])
+}
+
+model ReportDelivery {
+  id          String         @id @default(cuid())
+  workspaceId String
+  reportId    String
+  channel     DeliveryChannel @default(IN_APP)
+  status      DeliveryStatus @default(PENDING)
+  recipient   String?
+  attempts    Int            @default(0)
+  sentAt      DateTime?
+  errorMsg    String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  report    Report    @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, status, createdAt])
+  @@index([reportId, createdAt])
+}
+
+model SecretVersion {
+  id              String    @id @default(cuid())
+  workspaceId     String
+  kid             String
+  materialHash    String
+  isActive        Boolean   @default(false)
+  rotatedByUserId String?
+  createdAt       DateTime  @default(now())
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  rotatedBy       User?     @relation("SecretRotatedBy", fields: [rotatedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([workspaceId, kid])
+  @@index([workspaceId, isActive])
+}
+
+model AuditLog {
+  id          String         @id @default(cuid())
+  workspaceId String
+  actorUserId String?
+  actorType   AuditActorType @default(USER)
+  action      String
+  metadata    Json?
+  createdAt   DateTime       @default(now())
+  workspace   Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  actorUser   User?          @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, createdAt])
+  @@index([actorUserId, createdAt])
 }

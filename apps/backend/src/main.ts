@@ -12,7 +12,33 @@ async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
 
-  app.use(helmet());
+  app.use(
+    helmet({
+      crossOriginEmbedderPolicy: false,
+      contentSecurityPolicy: {
+        useDefaults: true,
+        directives: {
+          defaultSrc: ["'self'"],
+          frameAncestors: ["'none'"],
+          objectSrc: ["'none'"],
+          scriptSrc: ["'self'"],
+          imgSrc: ["'self'", "data:", "https://*.googleusercontent.com", "https://i.ytimg.com"],
+          connectSrc: [
+            "'self'",
+            "https://oauth2.googleapis.com",
+            "https://accounts.google.com",
+            "https://www.googleapis.com",
+            "https://youtubeanalytics.googleapis.com",
+            "https://analyticsdata.googleapis.com"
+          ]
+        }
+      },
+      referrerPolicy: {
+        policy: "no-referrer"
+      },
+      xssFilter: true
+    })
+  );
   app.use(cookieParser());
 
   app.enableCors({

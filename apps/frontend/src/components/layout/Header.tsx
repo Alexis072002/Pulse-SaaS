@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Bell, LogOut, Moon, Search, Sun } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
@@ -11,6 +11,41 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 export function Header(): JSX.Element {
   const { theme, setTheme } = useUiStore();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [workspace, setWorkspace] = useState<{ name: string; role: string } | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void fetch(`${API_URL}/workspace/context`, {
+      credentials: "include"
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          return null;
+        }
+        const payload = (await response.json()) as {
+          success?: boolean;
+          data?: { workspaceName?: string; role?: string };
+        };
+        if (!payload.success || !payload.data?.workspaceName || !payload.data.role) {
+          return null;
+        }
+        return {
+          name: payload.data.workspaceName,
+          role: payload.data.role
+        };
+      })
+      .then((data) => {
+        if (!active || !data) {
+          return;
+        }
+        setWorkspace(data);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const toggleTheme = (): void => {
     const nextTheme = theme === "dark" ? "light" : "dark";
@@ -78,8 +113,16 @@ export function Header(): JSX.Element {
         </button>
 
         {/* User avatar */}
+        <div className="hidden max-w-[220px] truncate text-right md:block">
+          <p className="truncate text-xs font-medium text-text">
+            {workspace?.name ?? "Workspace"}
+          </p>
+          <p className="text-[11px] uppercase tracking-[0.1em] text-text-muted">
+            {workspace?.role ?? "viewer"}
+          </p>
+        </div>
         <button className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/15 text-xs font-semibold text-accent transition-all hover:bg-accent/25">
-          U
+          {workspace?.name?.slice(0, 1).toUpperCase() ?? "W"}
         </button>
         <button
           onClick={logout}

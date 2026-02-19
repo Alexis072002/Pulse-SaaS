@@ -2,7 +2,9 @@ import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { PrismaService } from "~/prisma/prisma.service";
 import { TokenCryptoService } from "~/common/security/token-crypto.service";
+import { AuditService } from "~/modules/audit/audit.service";
 import { AuthService } from "~/modules/auth/auth.service";
+import { WorkspaceService } from "~/modules/workspace/workspace.service";
 
 interface StoredUser {
   id: string;
@@ -39,6 +41,23 @@ describe("AuthService", () => {
       return Buffer.from(record.ciphertext, "base64").toString("utf8");
     })
   } as unknown as TokenCryptoService;
+
+  const workspaceService = {
+    ensureDefaultWorkspace: jest.fn(async () => ({
+      workspaceId: "workspace-1",
+      workspaceName: "Workspace 1",
+      role: "OWNER"
+    })),
+    getActiveWorkspaceContext: jest.fn(async () => ({
+      workspaceId: "workspace-1",
+      workspaceName: "Workspace 1",
+      role: "OWNER"
+    }))
+  } as unknown as WorkspaceService;
+
+  const auditService = {
+    logUserAction: jest.fn(async () => undefined)
+  } as unknown as AuditService;
 
   let store: Map<string, StoredUser>;
   let prismaService: PrismaService;
@@ -97,7 +116,14 @@ describe("AuthService", () => {
       }
     } as unknown as PrismaService;
 
-    service = new AuthService(configService, jwtService, prismaService, tokenCryptoService);
+    service = new AuthService(
+      configService,
+      jwtService,
+      prismaService,
+      tokenCryptoService,
+      workspaceService,
+      auditService
+    );
     originalFetch = global.fetch;
   });
 

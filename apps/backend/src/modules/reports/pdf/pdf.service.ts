@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 
 export interface ReportPdfPayload {
   title: string;
@@ -8,9 +8,209 @@ export interface ReportPdfPayload {
   digest: string;
 }
 
+type DynamicImportFn = (moduleName: string) => Promise<unknown>;
+
+interface PuppeteerPage {
+  setContent: (html: string, options?: { waitUntil?: string }) => Promise<void>;
+  pdf: (options?: Record<string, unknown>) => Promise<Buffer | Uint8Array>;
+}
+
+interface PuppeteerBrowser {
+  newPage: () => Promise<PuppeteerPage>;
+  close: () => Promise<void>;
+}
+
+interface PuppeteerLike {
+  launch: (options?: Record<string, unknown>) => Promise<PuppeteerBrowser>;
+}
+
 @Injectable()
 export class PdfService {
+  private readonly logger = new Logger(PdfService.name);
+
   async render(payload: ReportPdfPayload): Promise<Buffer> {
+    try {
+      const puppeteerBuffer = await this.renderWithPuppeteer(payload);
+      if (puppeteerBuffer) {
+        return puppeteerBuffer;
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown puppeteer error";
+      this.logger.warn(`Puppeteer render failed, fallback to embedded PDF generator: ${message}`);
+    }
+
+    return this.renderFallbackPdf(payload);
+  }
+
+  private async renderWithPuppeteer(payload: ReportPdfPayload): Promise<Buffer | null> {
+    const dynamicImport = (new Function("moduleName", "return import(moduleName);") as DynamicImportFn);
+    const imported = await dynamicImport("puppeteer");
+    const puppeteer = this.resolvePuppeteer(imported);
+    if (!puppeteer) {
+      return null;
+    }
+
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"]
+    });
+
+    try {
+      const page = await browser.newPage();
+      await page.setContent(this.buildHtmlTemplate(payload), { waitUntil: "networkidle0" });
+      const data = await page.pdf({
+        format: "A4",
+        printBackground: true,
+        margin: {
+          top: "20px",
+          right: "20px",
+          bottom: "24px",
+          left: "20px"
+        }
+      });
+      return Buffer.isBuffer(data) ? data : Buffer.from(data);
+    } finally {
+      await browser.close();
+    }
+  }
+
+  private resolvePuppeteer(imported: unknown): PuppeteerLike | null {
+    if (typeof imported !== "object" || imported === null) {
+      return null;
+    }
+
+    const candidate = imported as Record<string, unknown>;
+    if (candidate.default && typeof candidate.default === "object") {
+      const nested = candidate.default as Record<string, unknown>;
+      if (typeof nested.launch === "function") {
+        return nested as unknown as PuppeteerLike;
+      }
+    }
+
+    if (typeof candidate.launch === "function") {
+      return candidate as unknown as PuppeteerLike;
+    }
+
+    return null;
+  }
+
+  private buildHtmlTemplate(payload: ReportPdfPayload): string {
+    const kpiCards = payload.kpis
+      .map(
+        (kpi) => `
+        <div class="kpi-card">
+          <p class="kpi-label">${this.escapeHtml(kpi.label)}</p>
+          <p class="kpi-value">${this.escapeHtml(kpi.value)}</p>
+        </div>
+      `
+      )
+      .join("");
+
+    return `
+      <!doctype html>
+      <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <title>${this.escapeHtml(payload.title)}</title>
+        <style>
+          * { box-sizing: border-box; }
+          body {
+            margin: 0;
+            padding: 24px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: #0f172a;
+            background: #f8fafc;
+          }
+          .sheet {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 18px;
+            padding: 24px;
+          }
+          .header {
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 16px;
+            margin-bottom: 20px;
+          }
+          .title {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+            color: #0f172a;
+          }
+          .meta {
+            margin-top: 8px;
+            color: #475569;
+            font-size: 12px;
+          }
+          .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+          }
+          .kpi-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 10px;
+            background: #f8fafc;
+          }
+          .kpi-label {
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-size: 10px;
+            color: #64748b;
+          }
+          .kpi-value {
+            margin: 8px 0 0 0;
+            font-family: "SFMono-Regular", Menlo, Monaco, monospace;
+            font-size: 18px;
+            font-weight: 700;
+            color: #0f172a;
+          }
+          .digest-title {
+            margin: 0 0 8px 0;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #334155;
+          }
+          .digest {
+            margin: 0;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #1e293b;
+          }
+          .footer {
+            margin-top: 18px;
+            font-size: 11px;
+            color: #64748b;
+          }
+        </style>
+      </head>
+      <body>
+        <main class="sheet">
+          <section class="header">
+            <h1 class="title">${this.escapeHtml(payload.title)}</h1>
+            <p class="meta">Period: ${this.escapeHtml(payload.periodLabel)}</p>
+            <p class="meta">Generated at: ${this.escapeHtml(payload.generatedAt)}</p>
+          </section>
+          <section class="kpi-grid">
+            ${kpiCards}
+          </section>
+          <section>
+            <h2 class="digest-title">Digest</h2>
+            <p class="digest">${this.escapeHtml(payload.digest)}</p>
+          </section>
+          <p class="footer">Pulse Reports V2 - Generated automatically.</p>
+        </main>
+      </body>
+      </html>
+    `;
+  }
+
+  private renderFallbackPdf(payload: ReportPdfPayload): Buffer {
     const lines = [
       payload.title,
       `Period: ${payload.periodLabel}`,
@@ -101,6 +301,15 @@ export class PdfService {
       .replace(/\\/g, "\\\\")
       .replace(/\(/g, "\\(")
       .replace(/\)/g, "\\)");
+  }
+
+  private escapeHtml(value: string): string {
+    return value
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
   }
 
   private toAscii(value: string): string {

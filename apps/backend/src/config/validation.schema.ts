@@ -9,6 +9,7 @@ export const validationSchema = Joi.object({
   JWT_SECRET: Joi.string().min(32).required(),
   OPS_PANEL_KEY: Joi.string().allow(""),
   GOOGLE_TOKENS_ENCRYPTION_SECRET: Joi.string().min(32).allow(""),
+  GOOGLE_TOKENS_ENCRYPTION_SECRETS: Joi.string().allow(""),
   JWT_EXPIRATION: Joi.string().required(),
   JWT_REFRESH_EXPIRATION: Joi.string().required(),
   GOOGLE_CLIENT_ID: Joi.string().required(),

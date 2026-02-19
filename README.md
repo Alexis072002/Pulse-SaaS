@@ -15,6 +15,8 @@ Pulse est un SaaS analytics multi-plateforme (YouTube + GA4) basé sur `Next.js 
 3. `pnpm install`
 4. `pnpm dev`
 
+Recommandé: `Node.js 20 LTS` ou `22 LTS` (Prisma migrations instables sur Node 25).
+
 `pnpm dev` lance automatiquement:
 - l'infra locale (Postgres + Redis),
 - la génération Prisma,
@@ -50,6 +52,39 @@ Pulse est un SaaS analytics multi-plateforme (YouTube + GA4) basé sur `Next.js 
 
 - `OPENAI_API_KEY` peut rester vide.
 - Le digest rapport utilise un moteur heuristique local (aucun coût API).
+
+## Workspace + RBAC
+
+- Chaque utilisateur est rattaché à un `Workspace` actif.
+- Rôles disponibles: `OWNER`, `EDITOR`, `VIEWER`.
+- Actions protégées (ex: génération/retry de rapports) nécessitent `OWNER` ou `EDITOR`.
+- Endpoint de contexte: `GET /workspace/context`.
+
+## Rapports V2
+
+- Génération asynchrone via queue interne:
+  - `POST /reports/generate`
+  - `POST /reports/:id/retry`
+  - `POST /reports/:id/deliveries/:deliveryId/retry`
+- Scheduling configurable:
+  - `GET /reports/schedules`
+  - `POST /reports/schedules/:type`
+- Historique des envois par rapport (`deliveries`) visible dans la page `/reports`.
+- PDF via Puppeteer si disponible, sinon fallback PDF local.
+
+## Sécurité renforcée
+
+- Rate limiting par route sensible via décorateur `@RouteRateLimit`.
+- RBAC global via guard `@Roles(...)`.
+- Rotation de clés de chiffrement:
+  - `GOOGLE_TOKENS_ENCRYPTION_SECRETS=k2:secret_new,k1:secret_old`
+- Audit trail en base (`AuditLog`) pour login/logout, rapports, rotation secrets.
+
+## Performance & DX
+
+- Skeleton global du dashboard: `apps/frontend/src/app/(dashboard)/loading.tsx`.
+- Lighthouse CI ajouté: `.github/workflows/lighthouse.yml`.
+- Config perf budget: `apps/frontend/lighthouserc.json`.
 
 ## Tests
 

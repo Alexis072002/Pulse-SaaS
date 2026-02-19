@@ -3,14 +3,18 @@ import { JwtModule } from "@nestjs/jwt";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { PassportModule } from "@nestjs/passport";
 import { TokenCryptoService } from "~/common/security/token-crypto.service";
+import { AuditModule } from "~/modules/audit/audit.module";
 import { AuthController } from "~/modules/auth/auth.controller";
 import { AuthService } from "~/modules/auth/auth.service";
 import { PrismaService } from "~/prisma/prisma.service";
 import { JwtStrategy } from "~/modules/auth/strategies/jwt.strategy";
+import { WorkspaceModule } from "~/modules/workspace/workspace.module";
 
 @Module({
   imports: [
     ConfigModule,
+    AuditModule,
+    WorkspaceModule,
     PassportModule.register({ defaultStrategy: "jwt" }),
     JwtModule.registerAsync({
       inject: [ConfigService],

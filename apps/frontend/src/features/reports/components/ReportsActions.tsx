@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { Download, Loader2, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
-import type { ReportStatus, ReportType } from "@/lib/api/reports";
+import type { ReportSchedule, ReportStatus, ReportType } from "@/lib/api/reports";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
@@ -15,6 +15,11 @@ interface GenerateReportButtonsProps {
 interface ReportRowActionsProps {
   reportId: string;
   reportStatus: ReportStatus;
+  failedDeliveryId?: string;
+}
+
+interface ReportScheduleControlsProps {
+  schedule: ReportSchedule;
 }
 
 async function postJson(path: string, body?: unknown): Promise<Response> {
@@ -70,7 +75,7 @@ export function GenerateReportButtons({ defaultType = "WEEKLY" }: GenerateReport
   );
 }
 
-export function ReportRowActions({ reportId, reportStatus }: ReportRowActionsProps): JSX.Element {
+export function ReportRowActions({ reportId, reportStatus, failedDeliveryId }: ReportRowActionsProps): JSX.Element {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -113,7 +118,78 @@ export function ReportRowActions({ reportId, reportStatus }: ReportRowActionsPro
             Retry
           </button>
         ) : null}
+        {failedDeliveryId ? (
+          <ReportDeliveryRetryButton reportId={reportId} deliveryId={failedDeliveryId} />
+        ) : null}
       </div>
+      {errorMessage ? <p className="text-xs text-youtube">{errorMessage}</p> : null}
+    </div>
+  );
+}
+
+export function ReportDeliveryRetryButton({ reportId, deliveryId }: { reportId: string; deliveryId: string }): JSX.Element {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const retryDelivery = (): void => {
+    startTransition(async () => {
+      setErrorMessage(null);
+      const response = await postJson(`/reports/${reportId}/deliveries/${deliveryId}/retry`);
+      if (!response.ok) {
+        setErrorMessage("Retry envoi impossible");
+        return;
+      }
+      router.refresh();
+    });
+  };
+
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <button
+        type="button"
+        onClick={retryDelivery}
+        disabled={isPending}
+        className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-xs font-medium text-text transition-colors hover:border-accent/35 hover:text-accent disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {isPending ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+        Retry envoi
+      </button>
+      {errorMessage ? <p className="text-xs text-youtube">{errorMessage}</p> : null}
+    </div>
+  );
+}
+
+export function ReportScheduleControls({ schedule }: ReportScheduleControlsProps): JSX.Element {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const toggle = (): void => {
+    startTransition(async () => {
+      setErrorMessage(null);
+      const response = await postJson(`/reports/schedules/${schedule.type}`, {
+        enabled: !schedule.enabled
+      });
+      if (!response.ok) {
+        setErrorMessage("Maj planning impossible");
+        return;
+      }
+      router.refresh();
+    });
+  };
+
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <button
+        type="button"
+        onClick={toggle}
+        disabled={isPending}
+        className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-xs font-medium text-text transition-colors hover:border-accent/35 hover:text-accent disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {isPending ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+        {schedule.enabled ? "Désactiver" : "Activer"}
+      </button>
       {errorMessage ? <p className="text-xs text-youtube">{errorMessage}</p> : null}
     </div>
   );

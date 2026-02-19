@@ -134,6 +134,8 @@ export default async function YoutubePage({
               <img
                 src={topVideo.thumbnailUrl}
                 alt={topVideo.title}
+                width={640}
+                height={360}
                 className="h-40 w-full rounded-xl border border-border object-cover"
                 loading="lazy"
               />

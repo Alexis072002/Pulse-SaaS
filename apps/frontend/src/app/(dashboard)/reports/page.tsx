@@ -4,12 +4,15 @@ import { redirect } from "next/navigation";
 import { CalendarClock, CheckCircle2, Clock3, FileText, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { PageWrapper } from "@/components/layout/PageWrapper";
-import { GenerateReportButtons, ReportRowActions } from "@/features/reports";
+import { GenerateReportButtons, ReportRowActions, ReportScheduleControls } from "@/features/reports";
 import {
+  getReportSchedules,
   getReports,
   parseReportStatus,
   parseReportType,
+  type DeliveryStatus,
   type ReportItem,
+  type ReportSchedule,
   type ReportStatus,
   type ReportType
 } from "@/lib/api/reports";
@@ -24,6 +27,7 @@ const REPORT_TYPES: Array<{ label: string; value?: ReportType }> = [
 const REPORT_STATUSES: Array<{ label: string; value?: ReportStatus }> = [
   { label: "Tous statuts" },
   { label: "Pending", value: "PENDING" },
+  { label: "Processing", value: "PROCESSING" },
   { label: "Done", value: "DONE" },
   { label: "Failed", value: "FAILED" }
 ];
@@ -52,6 +56,16 @@ function countByStatus(items: ReportItem[], status: ReportStatus): number {
   return items.filter((item) => item.status === status).length;
 }
 
+function deliveryTone(status: DeliveryStatus): "neutral" | "positive" | "negative" | "accent" {
+  if (status === "SENT") {
+    return "positive";
+  }
+  if (status === "FAILED") {
+    return "negative";
+  }
+  return "accent";
+}
+
 function toFrenchType(type: ReportType): string {
   return type === "WEEKLY" ? "Hebdo" : "Mensuel";
 }
@@ -77,11 +91,15 @@ export default async function ReportsPage({
   const selectedStatus = parseReportStatus(searchParams?.status);
 
   let reports: ReportItem[];
+  let schedules: ReportSchedule[];
   try {
-    reports = await getReports({
-      type: selectedType,
-      status: selectedStatus
-    });
+    [reports, schedules] = await Promise.all([
+      getReports({
+        type: selectedType,
+        status: selectedStatus
+      }),
+      getReportSchedules()
+    ]);
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHENTICATED") {
       redirect("/login");
@@ -90,6 +108,7 @@ export default async function ReportsPage({
   }
 
   const pendingCount = countByStatus(reports, "PENDING");
+  const processingCount = countByStatus(reports, "PROCESSING");
   const doneCount = countByStatus(reports, "DONE");
   const failedCount = countByStatus(reports, "FAILED");
 
@@ -142,10 +161,14 @@ export default async function ReportsPage({
         </div>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-3">
+      <section className="grid gap-4 sm:grid-cols-4">
         <article className="rounded-2xl border border-border bg-surface/80 p-4">
           <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted">Pending</p>
           <p className="mt-3 font-mono text-4xl font-semibold text-accent">{pendingCount}</p>
+        </article>
+        <article className="rounded-2xl border border-border bg-surface/80 p-4">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted">Processing</p>
+          <p className="mt-3 font-mono text-4xl font-semibold text-accent">{processingCount}</p>
         </article>
         <article className="rounded-2xl border border-border bg-surface/80 p-4">
           <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted">Done</p>
@@ -157,6 +180,33 @@ export default async function ReportsPage({
         </article>
       </section>
 
+      <section className="glass rounded-2xl p-5">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-base font-semibold text-text">Planning des envois</h2>
+          <p className="text-xs text-text-muted">UTC</p>
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          {schedules.map((schedule) => (
+            <article key={schedule.id} className="rounded-xl border border-border bg-surface-2 px-4 py-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-text">{toFrenchType(schedule.type)}</p>
+                  <p className="mt-1 text-xs text-text-2">
+                    {schedule.type === "WEEKLY"
+                      ? `Jour: ${schedule.dayOfWeek ?? 1} · ${String(schedule.hourUtc).padStart(2, "0")}h${String(schedule.minuteUtc).padStart(2, "0")}`
+                      : `Jour du mois: ${schedule.dayOfMonth ?? 1} · ${String(schedule.hourUtc).padStart(2, "0")}h${String(schedule.minuteUtc).padStart(2, "0")}`}
+                  </p>
+                  <p className="mt-1 text-xs text-text-muted">
+                    Dernier run: {schedule.lastRunAt ? new Date(schedule.lastRunAt).toLocaleString("fr-FR") : "jamais"}
+                  </p>
+                </div>
+                <ReportScheduleControls schedule={schedule} />
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
       <section className="glass overflow-hidden rounded-2xl">
         <div className="overflow-x-auto">
           <table className="min-w-full">
@@ -165,6 +215,7 @@ export default async function ReportsPage({
                 <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted">Période</th>
                 <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted">Type</th>
                 <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted">Statut</th>
+                <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted">Envois</th>
                 <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted">Créé le</th>
                 <th className="px-4 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted">Actions</th>
               </tr>
@@ -172,7 +223,7 @@ export default async function ReportsPage({
             <tbody>
               {reports.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-14 text-center">
+                  <td colSpan={6} className="px-4 py-14 text-center">
                     <div className="mx-auto flex max-w-md flex-col items-center">
                       <div className="rounded-2xl border border-accent/20 bg-accent-muted p-3 text-accent">
                         <FileText size={24} />
@@ -206,11 +257,31 @@ export default async function ReportsPage({
                       </div>
                       {report.errorMsg ? <p className="mt-1 max-w-xs text-xs text-youtube">{report.errorMsg}</p> : null}
                     </td>
+                    <td className="px-4 py-3 align-top">
+                      {report.deliveries.length === 0 ? (
+                        <p className="text-xs text-text-muted">Aucun envoi</p>
+                      ) : (
+                        <div className="space-y-1">
+                          {report.deliveries.slice(0, 2).map((delivery) => (
+                            <div key={delivery.id} className="flex items-center gap-1.5">
+                              <Badge tone={deliveryTone(delivery.status)}>{delivery.status}</Badge>
+                              <span className="text-xs text-text-muted">
+                                {delivery.sentAt ? new Date(delivery.sentAt).toLocaleDateString("fr-FR") : "pending"}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </td>
                     <td className="px-4 py-3 align-top text-sm text-text-2">
                       {new Date(report.createdAt).toLocaleString("fr-FR")}
                     </td>
                     <td className="px-4 py-3 align-top text-right">
-                      <ReportRowActions reportId={report.id} reportStatus={report.status} />
+                      <ReportRowActions
+                        reportId={report.id}
+                        reportStatus={report.status}
+                        failedDeliveryId={report.deliveries.find((delivery) => delivery.status === "FAILED")?.id}
+                      />
                     </td>
                   </tr>
                 ))

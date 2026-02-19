@@ -37,13 +37,16 @@ export interface OpsHealthData {
 export interface OpsMetricsData {
   timestamp: string;
   counts: {
+    workspaces: number;
     users: number;
     reports: number;
     snapshots: number;
     digests: number;
+    auditLogs: number;
   };
   reportsByStatus: {
     PENDING: number;
+    PROCESSING: number;
     DONE: number;
     FAILED: number;
   };
@@ -73,6 +76,16 @@ export interface OpsLogEntry {
   durationMs: number;
   ok: boolean;
   ip: string;
+}
+
+export interface OpsAuditEntry {
+  id: string;
+  createdAt: string;
+  action: string;
+  actorType: string;
+  actorUserId: string | null;
+  workspaceId: string;
+  metadata: unknown;
 }
 
 interface FetchOpsOptions {
@@ -129,6 +142,13 @@ export async function getOpsLogs(limit = 120, options: FetchOpsOptions = {}): Pr
     limit: String(limit)
   });
   return fetchOps<OpsLogEntry[]>(`/ops/logs?${params.toString()}`, options);
+}
+
+export async function getOpsAudit(limit = 80, options: FetchOpsOptions = {}): Promise<OpsAuditEntry[]> {
+  const params = new URLSearchParams({
+    limit: String(limit)
+  });
+  return fetchOps<OpsAuditEntry[]>(`/ops/audit?${params.toString()}`, options);
 }
 
 export function formatBytes(value: number): string {
