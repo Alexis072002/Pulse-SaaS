@@ -57,7 +57,7 @@ export function Sidebar({ workspace }: { workspace: WorkspaceBadgeInfo | null })
       )}
     >
       {/* Logo */}
-      <div className={cn("flex items-center border-b border-border px-4 py-5", sidebarCollapsed && "justify-center")}>
+      <div className={cn("flex h-16 items-center border-b border-border px-4", sidebarCollapsed && "justify-center")}>
         <PulseLogo collapsed={sidebarCollapsed} />
       </div>
 
@@ -83,7 +83,7 @@ export function Sidebar({ workspace }: { workspace: WorkspaceBadgeInfo | null })
               {isActive && (
                 <motion.div
                   layoutId="sidebar-active"
-                  className="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full bg-accent"
+                  className="absolute bottom-1 left-0 top-1 w-[3px] rounded-r-full bg-accent"
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 />
               )}
