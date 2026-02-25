@@ -1,8 +1,14 @@
+import Link from "next/link";
+import type { Route } from "next";
 import { redirect } from "next/navigation";
 import { Activity, Database, HardDrive, HeartPulse, ShieldAlert, Timer, Workflow } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { formatBytes, getOpsAudit, getOpsHealth, getOpsLogs, getOpsMetrics, type OpsAuditEntry, type OpsLogEntry } from "@/lib/api/ops";
+import { cn } from "@/lib/utils/cn";
+
+const LOGS_PAGE_SIZE = 20;
+const AUDIT_PAGE_SIZE = 15;
 
 function formatUptime(seconds: number): string {
   const days = Math.floor(seconds / 86_400);
@@ -38,9 +44,13 @@ function statusBadge(statusCode: number): "positive" | "negative" | "accent" {
 export default async function OpsPage({
   searchParams
 }: {
-  searchParams?: { key?: string };
+  searchParams?: { key?: string; logsPage?: string; auditPage?: string };
 }): Promise<JSX.Element> {
   const panelKey = searchParams?.key;
+  const requestedLogsPage = Number(searchParams?.logsPage ?? "1");
+  const requestedAuditPage = Number(searchParams?.auditPage ?? "1");
+  const logsPage = Number.isFinite(requestedLogsPage) && requestedLogsPage > 0 ? Math.floor(requestedLogsPage) : 1;
+  const auditPage = Number.isFinite(requestedAuditPage) && requestedAuditPage > 0 ? Math.floor(requestedAuditPage) : 1;
 
   let health: Awaited<ReturnType<typeof getOpsHealth>>;
   let metrics: Awaited<ReturnType<typeof getOpsMetrics>>;
@@ -51,8 +61,8 @@ export default async function OpsPage({
     [health, metrics, logs, audit] = await Promise.all([
       getOpsHealth({ key: panelKey }),
       getOpsMetrics({ key: panelKey }),
-      getOpsLogs(120, { key: panelKey }),
-      getOpsAudit(80, { key: panelKey })
+      getOpsLogs(240, { key: panelKey }),
+      getOpsAudit(150, { key: panelKey })
     ]);
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHENTICATED") {
@@ -80,6 +90,31 @@ export default async function OpsPage({
 
     throw error;
   }
+
+  const logsTotalPages = Math.max(1, Math.ceil(logs.length / LOGS_PAGE_SIZE));
+  const auditTotalPages = Math.max(1, Math.ceil(audit.length / AUDIT_PAGE_SIZE));
+  const safeLogsPage = Math.min(logsPage, logsTotalPages);
+  const safeAuditPage = Math.min(auditPage, auditTotalPages);
+  const logsOffset = (safeLogsPage - 1) * LOGS_PAGE_SIZE;
+  const auditOffset = (safeAuditPage - 1) * AUDIT_PAGE_SIZE;
+  const visibleLogs = logs.slice(logsOffset, logsOffset + LOGS_PAGE_SIZE);
+  const visibleAudit = audit.slice(auditOffset, auditOffset + AUDIT_PAGE_SIZE);
+
+  const withOpsParams = (nextLogsPage: number, nextAuditPage: number): string => {
+    const params = new URLSearchParams();
+    if (panelKey) {
+      params.set("key", panelKey);
+    }
+    if (nextLogsPage > 1) {
+      params.set("logsPage", String(nextLogsPage));
+    }
+    if (nextAuditPage > 1) {
+      params.set("auditPage", String(nextAuditPage));
+    }
+
+    const query = params.toString();
+    return `/internal/ops${query ? `?${query}` : ""}`;
+  };
 
   return (
     <PageWrapper title="Ops Panel">
@@ -217,7 +252,7 @@ export default async function OpsPage({
               </tr>
             </thead>
             <tbody>
-              {logs.map((log) => (
+              {visibleLogs.map((log) => (
                 <tr key={`${log.requestId}-${log.timestamp}`} className="border-b border-border/50 last:border-0">
                   <td className="whitespace-nowrap px-3 py-2 text-xs text-text-2">{new Date(log.timestamp).toLocaleTimeString("fr-FR")}</td>
                   <td className={`whitespace-nowrap px-3 py-2 text-xs font-semibold ${methodTone(log.method)}`}>{log.method}</td>
@@ -231,6 +266,33 @@ export default async function OpsPage({
               ))}
             </tbody>
           </table>
+        </div>
+        <div className="flex items-center justify-between border-t border-border px-4 py-3">
+          <p className="text-xs text-text-2">Page {safeLogsPage}/{logsTotalPages}</p>
+          <div className="flex items-center gap-2">
+            <Link
+              href={withOpsParams(Math.max(1, safeLogsPage - 1), safeAuditPage) as Route}
+              className={cn(
+                "rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors",
+                safeLogsPage <= 1
+                  ? "pointer-events-none border-border text-text-muted opacity-50"
+                  : "border-border bg-surface text-text-2 hover:border-border-2 hover:text-text"
+              )}
+            >
+              Précédent
+            </Link>
+            <Link
+              href={withOpsParams(Math.min(logsTotalPages, safeLogsPage + 1), safeAuditPage) as Route}
+              className={cn(
+                "rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors",
+                safeLogsPage >= logsTotalPages
+                  ? "pointer-events-none border-border text-text-muted opacity-50"
+                  : "border-border bg-surface text-text-2 hover:border-border-2 hover:text-text"
+              )}
+            >
+              Suivant
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -250,7 +312,7 @@ export default async function OpsPage({
               </tr>
             </thead>
             <tbody>
-              {audit.map((event) => (
+              {visibleAudit.map((event) => (
                 <tr key={event.id} className="border-b border-border/50 last:border-0">
                   <td className="whitespace-nowrap px-3 py-2 text-xs text-text-2">{new Date(event.createdAt).toLocaleString("fr-FR")}</td>
                   <td className="px-3 py-2 text-xs text-text">{event.action}</td>
@@ -260,6 +322,33 @@ export default async function OpsPage({
               ))}
             </tbody>
           </table>
+        </div>
+        <div className="flex items-center justify-between border-t border-border px-4 py-3">
+          <p className="text-xs text-text-2">Page {safeAuditPage}/{auditTotalPages}</p>
+          <div className="flex items-center gap-2">
+            <Link
+              href={withOpsParams(safeLogsPage, Math.max(1, safeAuditPage - 1)) as Route}
+              className={cn(
+                "rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors",
+                safeAuditPage <= 1
+                  ? "pointer-events-none border-border text-text-muted opacity-50"
+                  : "border-border bg-surface text-text-2 hover:border-border-2 hover:text-text"
+              )}
+            >
+              Précédent
+            </Link>
+            <Link
+              href={withOpsParams(safeLogsPage, Math.min(auditTotalPages, safeAuditPage + 1)) as Route}
+              className={cn(
+                "rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors",
+                safeAuditPage >= auditTotalPages
+                  ? "pointer-events-none border-border text-text-muted opacity-50"
+                  : "border-border bg-surface text-text-2 hover:border-border-2 hover:text-text"
+              )}
+            >
+              Suivant
+            </Link>
+          </div>
         </div>
       </section>
     </PageWrapper>

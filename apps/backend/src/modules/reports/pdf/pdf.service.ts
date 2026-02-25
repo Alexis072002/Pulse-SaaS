@@ -6,6 +6,9 @@ export interface ReportPdfPayload {
   generatedAt: string;
   kpis: Array<{ label: string; value: string }>;
   digest: string;
+  highlights?: string[];
+  recommendations?: string[];
+  nextActions?: string[];
 }
 
 type DynamicImportFn = (moduleName: string) => Promise<unknown>;
@@ -95,6 +98,27 @@ export class PdfService {
   }
 
   private buildHtmlTemplate(payload: ReportPdfPayload): string {
+    const highlights = (payload.highlights ?? [])
+      .map((line) => this.escapeHtml(line))
+      .filter((line) => line.length > 0)
+      .slice(0, 4);
+
+    const recommendations = (payload.recommendations ?? [])
+      .map((line) => this.escapeHtml(line))
+      .filter((line) => line.length > 0)
+      .slice(0, 5);
+
+    const nextActions = (
+      payload.nextActions ?? [
+        "Valider les priorités de la semaine en équipe.",
+        "Re-lancer les tests des contenus clés.",
+        "Comparer les écarts avec le cycle précédent."
+      ]
+    )
+      .map((line) => this.escapeHtml(line))
+      .filter((line) => line.length > 0)
+      .slice(0, 4);
+
     const kpiCards = payload.kpis
       .map(
         (kpi) => `
@@ -106,6 +130,16 @@ export class PdfService {
       )
       .join("");
 
+    const highlightsHtml = highlights.length > 0
+      ? highlights.map((line) => `<li>${line}</li>`).join("")
+      : `<li>${this.escapeHtml("Aucun highlight disponible sur cette période.")}</li>`;
+
+    const recommendationsHtml = recommendations.length > 0
+      ? recommendations.map((line) => `<li>${line}</li>`).join("")
+      : `<li>${this.escapeHtml("Continuer la cadence et monitorer les KPIs clés.")}</li>`;
+
+    const nextActionsHtml = nextActions.map((line) => `<li>${line}</li>`).join("");
+
     return `
       <!doctype html>
       <html lang="en">
@@ -116,94 +150,190 @@ export class PdfService {
           * { box-sizing: border-box; }
           body {
             margin: 0;
-            padding: 24px;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            padding: 26px;
+            font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             color: #0f172a;
-            background: #f8fafc;
+            background: linear-gradient(180deg, #f5f8ff 0%, #eef3fc 100%);
           }
           .sheet {
             background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 18px;
-            padding: 24px;
+            border: 1px solid #dce5f5;
+            border-radius: 20px;
+            padding: 0;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
           }
-          .header {
-            border-bottom: 1px solid #e2e8f0;
-            padding-bottom: 16px;
-            margin-bottom: 20px;
+          .header-band {
+            background: linear-gradient(104deg, #9f500b 0%, #f59e0b 52%, #f97316 100%);
+            padding: 22px 26px 18px;
+            color: #fff;
+          }
+          .header-kicker {
+            margin: 0;
+            font-size: 11px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.85);
           }
           .title {
-            margin: 0;
-            font-size: 24px;
+            margin: 8px 0 0;
+            font-size: 29px;
             font-weight: 700;
-            color: #0f172a;
+            letter-spacing: -0.02em;
+            color: #ffffff;
           }
           .meta {
-            margin-top: 8px;
-            color: #475569;
+            margin-top: 12px;
+            color: rgba(255, 255, 255, 0.85);
             font-size: 12px;
+          }
+          .content {
+            padding: 22px 26px 24px;
+          }
+          .section-title {
+            margin: 0 0 12px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #475569;
           }
           .kpi-grid {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 10px;
-            margin-bottom: 20px;
+            gap: 12px;
+            margin-bottom: 18px;
           }
           .kpi-card {
-            border: 1px solid #e2e8f0;
+            border: 1px solid #dee7f6;
             border-radius: 12px;
-            padding: 10px;
-            background: #f8fafc;
+            padding: 12px;
+            background: #f8fbff;
           }
           .kpi-label {
             margin: 0;
             text-transform: uppercase;
             letter-spacing: 0.08em;
-            font-size: 10px;
-            color: #64748b;
+            font-size: 9px;
+            color: #5f708d;
           }
           .kpi-value {
-            margin: 8px 0 0 0;
+            margin: 10px 0 0 0;
             font-family: "SFMono-Regular", Menlo, Monaco, monospace;
-            font-size: 18px;
+            font-size: 20px;
             font-weight: 700;
             color: #0f172a;
           }
-          .digest-title {
-            margin: 0 0 8px 0;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: #334155;
+          .digest-box {
+            border: 1px solid #dee7f6;
+            background: #f8fbff;
+            border-radius: 14px;
+            padding: 14px;
           }
           .digest {
             margin: 0;
             font-size: 13px;
             line-height: 1.6;
-            color: #1e293b;
+            color: #243247;
           }
           .footer {
-            margin-top: 18px;
-            font-size: 11px;
+            margin-top: 16px;
+            padding-top: 12px;
+            border-top: 1px solid #e6edf8;
+            font-size: 10px;
             color: #64748b;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+          }
+          .sheet-second {
+            margin-top: 18px;
+            page-break-before: always;
+            break-before: page;
+          }
+          .header-band-blue {
+            background: linear-gradient(98deg, #14213d 0%, #273d70 60%, #3555a0 100%);
+            padding: 20px 26px 16px;
+            color: #fff;
+          }
+          .insight-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+          }
+          .insight-card {
+            border: 1px solid #dee7f6;
+            border-radius: 14px;
+            background: #f8fbff;
+            padding: 14px;
+          }
+          .insight-card h3 {
+            margin: 0 0 8px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #5f708d;
+          }
+          .insight-card ul,
+          .insight-card ol {
+            margin: 0;
+            padding-left: 18px;
+          }
+          .insight-card li {
+            margin-bottom: 7px;
+            font-size: 12px;
+            line-height: 1.45;
+            color: #243247;
           }
         </style>
       </head>
       <body>
         <main class="sheet">
-          <section class="header">
+          <section class="header-band">
+            <p class="header-kicker">Pulse Executive Report</p>
             <h1 class="title">${this.escapeHtml(payload.title)}</h1>
             <p class="meta">Period: ${this.escapeHtml(payload.periodLabel)}</p>
             <p class="meta">Generated at: ${this.escapeHtml(payload.generatedAt)}</p>
           </section>
-          <section class="kpi-grid">
-            ${kpiCards}
+          <section class="content">
+            <h2 class="section-title">Key Metrics</h2>
+            <section class="kpi-grid">
+              ${kpiCards}
+            </section>
+            <h2 class="section-title">AI Digest</h2>
+            <section class="digest-box">
+              <p class="digest">${this.escapeHtml(payload.digest)}</p>
+            </section>
+            <p class="footer">Pulse Analytics • Confidential demo report</p>
           </section>
-          <section>
-            <h2 class="digest-title">Digest</h2>
-            <p class="digest">${this.escapeHtml(payload.digest)}</p>
+        </main>
+        <main class="sheet sheet-second">
+          <section class="header-band-blue">
+            <p class="header-kicker">Pulse Executive Report</p>
+            <h1 class="title">Insights & Action Plan</h1>
+            <p class="meta">From the same reporting window: ${this.escapeHtml(payload.periodLabel)}</p>
           </section>
-          <p class="footer">Pulse Reports V2 - Generated automatically.</p>
+          <section class="content">
+            <section class="insight-grid">
+              <article class="insight-card">
+                <h3>Highlights</h3>
+                <ul>
+                  ${highlightsHtml}
+                </ul>
+              </article>
+              <article class="insight-card">
+                <h3>Recommendations</h3>
+                <ol>
+                  ${recommendationsHtml}
+                </ol>
+              </article>
+            </section>
+            <section class="insight-card" style="margin-top:14px;">
+              <h3>Next Cycle Checklist</h3>
+              <ul>
+                ${nextActionsHtml}
+              </ul>
+            </section>
+            <p class="footer">Pulse Analytics • Decision-ready output</p>
+          </section>
         </main>
       </body>
       </html>
@@ -211,39 +341,253 @@ export class PdfService {
   }
 
   private renderFallbackPdf(payload: ReportPdfPayload): Buffer {
-    const lines = [
-      payload.title,
-      `Period: ${payload.periodLabel}`,
-      `Generated at: ${payload.generatedAt}`,
-      "",
-      "KPI Summary",
-      ...payload.kpis.map((item) => `- ${item.label}: ${item.value}`),
-      "",
-      "AI Digest",
-      ...this.wrapText(payload.digest, 95)
-    ];
+    const safeTitle = this.toAscii(payload.title) || "Pulse Analytics Report";
+    const safePeriod = this.toAscii(payload.periodLabel) || "N/A";
+    const safeGeneratedAt = this.toAscii(payload.generatedAt) || new Date().toISOString();
 
-    return this.buildSinglePagePdf(lines.slice(0, 40));
+    const kpis = payload.kpis.slice(0, 6).map((item) => ({
+      label: this.toAscii(item.label) || "Metric",
+      value: this.toAscii(item.value) || "0"
+    }));
+    const digestLines = this.wrapText(payload.digest, 88).slice(0, 12);
+    const highlights = (payload.highlights ?? [])
+      .map((line) => this.toAscii(line))
+      .filter((line) => line.length > 0)
+      .slice(0, 4);
+    const recommendations = (payload.recommendations ?? [])
+      .map((line) => this.toAscii(line))
+      .filter((line) => line.length > 0)
+      .slice(0, 5);
+    const nextActions = (
+      payload.nextActions ?? [
+        "Review priorities with the team.",
+        "Retest the most strategic content formats.",
+        "Compare deltas against previous cycle."
+      ]
+    )
+      .map((line) => this.toAscii(line))
+      .filter((line) => line.length > 0)
+      .slice(0, 4);
+
+    return this.buildStyledFallbackPdf({
+      title: safeTitle,
+      periodLabel: safePeriod,
+      generatedAt: safeGeneratedAt,
+      kpis,
+      digestLines,
+      highlights,
+      recommendations,
+      nextActions
+    });
   }
 
-  private buildSinglePagePdf(lines: string[]): Buffer {
-    const sanitizedLines = lines.map((line) => this.escapePdfText(this.toAscii(line)));
-    const contentStream = [
-      "BT",
-      "/F1 12 Tf",
-      "14 TL",
-      "50 760 Td",
-      ...sanitizedLines.map((line, index) => (index === 0 ? `(${line}) Tj` : `T* (${line}) Tj`)),
-      "ET"
-    ].join("\n");
+  private buildStyledFallbackPdf(payload: {
+    title: string;
+    periodLabel: string;
+    generatedAt: string;
+    kpis: Array<{ label: string; value: string }>;
+    digestLines: string[];
+    highlights: string[];
+    recommendations: string[];
+    nextActions: string[];
+  }): Buffer {
+    const pageWidth = 595;
+    const pageHeight = 842;
+    const shellX = 30;
+    const shellY = 28;
+    const shellWidth = pageWidth - shellX * 2;
+    const shellHeight = pageHeight - shellY * 2;
+    const headerHeight = 78;
+    const gridTopY = 635;
+    const cardGap = 12;
+    const cardWidth = (shellWidth - cardGap - 40) / 2;
+    const cardHeight = 84;
+    const digestBoxY = 204;
+    const digestBoxHeight = 182;
 
-    const objects = [
-      "<< /Type /Catalog /Pages 2 0 R >>",
-      "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-      "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>",
-      `<< /Length ${Buffer.byteLength(contentStream, "utf8")} >>\nstream\n${contentStream}\nendstream`,
-      "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"
-    ];
+    const firstPageCommands: string[] = [];
+
+    // Page background.
+    firstPageCommands.push("0.965 0.975 0.99 rg");
+    firstPageCommands.push(`0 0 ${pageWidth} ${pageHeight} re`);
+    firstPageCommands.push("f");
+
+    // Main report shell.
+    firstPageCommands.push("1 1 1 rg");
+    firstPageCommands.push(`${shellX} ${shellY} ${shellWidth} ${shellHeight} re`);
+    firstPageCommands.push("f");
+    firstPageCommands.push("0.85 0.89 0.95 RG");
+    firstPageCommands.push("1 w");
+    firstPageCommands.push(`${shellX} ${shellY} ${shellWidth} ${shellHeight} re`);
+    firstPageCommands.push("S");
+
+    // Header bar.
+    firstPageCommands.push("0.70 0.36 0.05 rg");
+    firstPageCommands.push(`${shellX} ${shellY + shellHeight - headerHeight} ${shellWidth} ${headerHeight} re`);
+    firstPageCommands.push("f");
+    firstPageCommands.push("0.96 0.77 0.27 rg");
+    firstPageCommands.push(`${shellX} ${shellY + shellHeight - headerHeight} ${shellWidth} 6 re`);
+    firstPageCommands.push("f");
+
+    firstPageCommands.push(this.pdfText(payload.title, 48, 757, "F1", 24, [1, 1, 1]));
+    firstPageCommands.push(this.pdfText("Pulse Executive Report", 48, 736, "F2", 11, [0.98, 0.92, 0.84]));
+    firstPageCommands.push(this.pdfText(`Period: ${payload.periodLabel}`, 48, 700, "F2", 10, [0.27, 0.33, 0.44]));
+    firstPageCommands.push(this.pdfText(`Generated at: ${payload.generatedAt}`, 48, 684, "F2", 10, [0.27, 0.33, 0.44]));
+
+    firstPageCommands.push(this.pdfText("Key Metrics", 48, 657, "F1", 13, [0.08, 0.12, 0.22]));
+
+    payload.kpis.forEach((kpi, index) => {
+      const row = Math.floor(index / 2);
+      const col = index % 2;
+      const cardX = 48 + col * (cardWidth + cardGap);
+      const cardY = gridTopY - row * (cardHeight + cardGap);
+
+      firstPageCommands.push("0.97 0.98 1 rg");
+      firstPageCommands.push(`${cardX} ${cardY} ${cardWidth} ${cardHeight} re`);
+      firstPageCommands.push("f");
+      firstPageCommands.push("0.89 0.92 0.96 RG");
+      firstPageCommands.push("1 w");
+      firstPageCommands.push(`${cardX} ${cardY} ${cardWidth} ${cardHeight} re`);
+      firstPageCommands.push("S");
+
+      firstPageCommands.push(this.pdfText(kpi.label.toUpperCase(), cardX + 12, cardY + cardHeight - 22, "F2", 9, [0.43, 0.49, 0.60]));
+      firstPageCommands.push(this.pdfText(kpi.value, cardX + 12, cardY + 24, "F1", 18, [0.08, 0.12, 0.22]));
+    });
+
+    firstPageCommands.push(this.pdfText("AI Digest", 48, 412, "F1", 13, [0.08, 0.12, 0.22]));
+    firstPageCommands.push("0.985 0.988 0.995 rg");
+    firstPageCommands.push(`48 ${digestBoxY} ${shellWidth - 36} ${digestBoxHeight} re`);
+    firstPageCommands.push("f");
+    firstPageCommands.push("0.90 0.92 0.96 RG");
+    firstPageCommands.push("1 w");
+    firstPageCommands.push(`48 ${digestBoxY} ${shellWidth - 36} ${digestBoxHeight} re`);
+    firstPageCommands.push("S");
+
+    const startY = digestBoxY + digestBoxHeight - 28;
+    payload.digestLines.forEach((line, index) => {
+      firstPageCommands.push(this.pdfText(line, 62, startY - index * 14, "F2", 10.5, [0.16, 0.20, 0.28]));
+    });
+
+    firstPageCommands.push("0.92 0.93 0.97 RG");
+    firstPageCommands.push("1 w");
+    firstPageCommands.push("48 164 m");
+    firstPageCommands.push(`${48 + (shellWidth - 36)} 164 l`);
+    firstPageCommands.push("S");
+    firstPageCommands.push(this.pdfText("Pulse Analytics - Confidential demo report", 48, 148, "F2", 9, [0.43, 0.49, 0.60]));
+
+    const secondPageCommands: string[] = [];
+    secondPageCommands.push("0.965 0.975 0.99 rg");
+    secondPageCommands.push(`0 0 ${pageWidth} ${pageHeight} re`);
+    secondPageCommands.push("f");
+    secondPageCommands.push("1 1 1 rg");
+    secondPageCommands.push(`${shellX} ${shellY} ${shellWidth} ${shellHeight} re`);
+    secondPageCommands.push("f");
+    secondPageCommands.push("0.85 0.89 0.95 RG");
+    secondPageCommands.push("1 w");
+    secondPageCommands.push(`${shellX} ${shellY} ${shellWidth} ${shellHeight} re`);
+    secondPageCommands.push("S");
+
+    secondPageCommands.push("0.10 0.17 0.31 rg");
+    secondPageCommands.push(`${shellX} ${shellY + shellHeight - headerHeight} ${shellWidth} ${headerHeight} re`);
+    secondPageCommands.push("f");
+    secondPageCommands.push("0.34 0.45 0.78 rg");
+    secondPageCommands.push(`${shellX} ${shellY + shellHeight - headerHeight} ${shellWidth} 6 re`);
+    secondPageCommands.push("f");
+    secondPageCommands.push(this.pdfText("Insights & Action Plan", 48, 753, "F1", 23, [1, 1, 1]));
+    secondPageCommands.push(this.pdfText(`Reference period: ${payload.periodLabel}`, 48, 732, "F2", 10, [0.84, 0.89, 0.97]));
+
+    secondPageCommands.push(this.pdfText("Highlights", 48, 690, "F1", 13, [0.08, 0.12, 0.22]));
+    secondPageCommands.push("0.97 0.98 1 rg");
+    secondPageCommands.push("48 520 499 155 re");
+    secondPageCommands.push("f");
+    secondPageCommands.push("0.89 0.92 0.96 RG");
+    secondPageCommands.push("1 w");
+    secondPageCommands.push("48 520 499 155 re");
+    secondPageCommands.push("S");
+
+    let highlightY = 650;
+    (payload.highlights.length > 0 ? payload.highlights : ["No major highlight detected for this cycle."]).forEach((item) => {
+      const wrapped = this.wrapText(item, 78).slice(0, 2);
+      wrapped.forEach((line, index) => {
+        secondPageCommands.push(
+          this.pdfText(index === 0 ? `- ${line}` : `  ${line}`, 62, highlightY, "F2", 10.5, [0.16, 0.20, 0.28])
+        );
+        highlightY -= 14;
+      });
+      highlightY -= 6;
+    });
+
+    secondPageCommands.push(this.pdfText("Recommendations", 48, 485, "F1", 13, [0.08, 0.12, 0.22]));
+    secondPageCommands.push("0.97 0.98 1 rg");
+    secondPageCommands.push("48 316 499 154 re");
+    secondPageCommands.push("f");
+    secondPageCommands.push("0.89 0.92 0.96 RG");
+    secondPageCommands.push("1 w");
+    secondPageCommands.push("48 316 499 154 re");
+    secondPageCommands.push("S");
+
+    let recommendationY = 447;
+    (payload.recommendations.length > 0
+      ? payload.recommendations
+      : ["Keep current pace and monitor key KPIs weekly."]).forEach((item, index) => {
+      const wrapped = this.wrapText(item, 76).slice(0, 2);
+      wrapped.forEach((line, lineIndex) => {
+        const prefix = lineIndex === 0 ? `${index + 1}. ` : "   ";
+        secondPageCommands.push(
+          this.pdfText(`${prefix}${line}`, 62, recommendationY, "F2", 10.5, [0.16, 0.20, 0.28])
+        );
+        recommendationY -= 14;
+      });
+      recommendationY -= 6;
+    });
+
+    secondPageCommands.push(this.pdfText("Next cycle checklist", 48, 282, "F1", 13, [0.08, 0.12, 0.22]));
+    secondPageCommands.push("0.97 0.98 1 rg");
+    secondPageCommands.push("48 146 499 124 re");
+    secondPageCommands.push("f");
+    secondPageCommands.push("0.89 0.92 0.96 RG");
+    secondPageCommands.push("1 w");
+    secondPageCommands.push("48 146 499 124 re");
+    secondPageCommands.push("S");
+
+    let checklistY = 246;
+    payload.nextActions.forEach((item) => {
+      const wrapped = this.wrapText(item, 78).slice(0, 2);
+      wrapped.forEach((line, index) => {
+        secondPageCommands.push(
+          this.pdfText(index === 0 ? `[ ] ${line}` : `    ${line}`, 62, checklistY, "F2", 10.5, [0.16, 0.20, 0.28])
+        );
+        checklistY -= 14;
+      });
+      checklistY -= 6;
+    });
+
+    secondPageCommands.push(this.pdfText("Pulse Analytics - Decision-ready output", 48, 126, "F2", 9, [0.43, 0.49, 0.60]));
+
+    return this.buildPdfDocument([firstPageCommands.join("\n"), secondPageCommands.join("\n")]);
+  }
+
+  private buildPdfDocument(pageStreams: string[]): Buffer {
+    const pageCount = Math.max(1, pageStreams.length);
+    const fontBoldObjectId = 3 + pageCount * 2;
+    const fontRegularObjectId = fontBoldObjectId + 1;
+    const kids = Array.from({ length: pageCount }, (_, index) => `${3 + index * 2} 0 R`).join(" ");
+
+    const objects: string[] = [];
+    objects.push("<< /Type /Catalog /Pages 2 0 R >>");
+    objects.push(`<< /Type /Pages /Kids [${kids}] /Count ${pageCount} >>`);
+
+    pageStreams.forEach((stream, index) => {
+      const pageObjectId = 3 + index * 2;
+      const contentObjectId = pageObjectId + 1;
+      objects.push(
+        `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 ${fontBoldObjectId} 0 R /F2 ${fontRegularObjectId} 0 R >> >> /Contents ${contentObjectId} 0 R >>`
+      );
+      objects.push(`<< /Length ${Buffer.byteLength(stream, "utf8")} >>\nstream\n${stream}\nendstream`);
+    });
+
+    objects.push("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>");
+    objects.push("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
 
     let pdf = "%PDF-1.4\n";
     const offsets: number[] = [0];
@@ -263,8 +607,30 @@ export class PdfService {
     }
 
     pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
-
     return Buffer.from(pdf, "utf8");
+  }
+
+  private pdfText(
+    text: string,
+    x: number,
+    y: number,
+    font: "F1" | "F2",
+    size: number,
+    color: [number, number, number]
+  ): string {
+    const safeText = this.escapePdfText(this.toAscii(text));
+    if (!safeText) {
+      return "";
+    }
+
+    return [
+      `${color[0]} ${color[1]} ${color[2]} rg`,
+      "BT",
+      `/${font} ${size} Tf`,
+      `1 0 0 1 ${x.toFixed(2)} ${y.toFixed(2)} Tm`,
+      `(${safeText}) Tj`,
+      "ET"
+    ].join("\n");
   }
 
   private wrapText(text: string, maxChars: number): string[] {

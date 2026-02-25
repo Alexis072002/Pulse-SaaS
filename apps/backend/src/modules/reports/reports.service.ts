@@ -272,7 +272,44 @@ export class ReportsService implements OnModuleInit, OnModuleDestroy {
       throw new BadRequestException("Report PDF is not available yet.");
     }
 
-    const content = await readFile(report.pdfUrl);
+    let content: Buffer;
+    try {
+      content = await readFile(report.pdfUrl);
+    } catch (error) {
+      if (!this.isMissingFileError(error)) {
+        throw error;
+      }
+
+      const regeneratedContent = await this.pdfService.render({
+        title: "Pulse Analytics Report",
+        periodLabel: `${this.toIsoDate(report.periodStart)} to ${this.toIsoDate(report.periodEnd)}`,
+        generatedAt: new Date().toISOString(),
+        kpis: [
+          { label: "Report type", value: report.type },
+          { label: "Workspace", value: report.workspaceId.slice(0, 8) },
+          { label: "Report ID", value: report.id.slice(0, 8) },
+          { label: "Generated", value: this.toIsoDate(report.updatedAt) }
+        ],
+        digest: report.aiDigest?.trim() || "Report regenerated automatically after storage recovery."
+      });
+
+      const refreshedPdfUrl = await this.persistPdf(report.id, regeneratedContent);
+      await this.prismaService.report.update({
+        where: { id: report.id },
+        data: {
+          pdfUrl: refreshedPdfUrl,
+          status: ReportStatus.DONE,
+          errorMsg: null
+        }
+      });
+
+      await this.auditService.logSystemAction(report.workspaceId, "REPORT_PDF_REGENERATED", {
+        reportId: report.id
+      });
+
+      content = regeneratedContent;
+    }
+
     const fileName = `pulse-${report.type.toLowerCase()}-${this.toIsoDate(report.periodEnd)}.pdf`;
     return { fileName, content };
   }
@@ -471,6 +508,26 @@ export class ReportsService implements OnModuleInit, OnModuleDestroy {
         overview.youtubeViewsDelta,
         overview.webSessionsDelta
       );
+      const highlights = this.buildReportHighlights({
+        youtubeViews: overview.youtubeViews,
+        youtubeDelta: overview.youtubeViewsDelta,
+        sessions: overview.webSessions,
+        sessionsDelta: overview.webSessionsDelta,
+        pulseScore: overview.pulseScore,
+        pulseScoreDelta: overview.pulseScoreDelta,
+        averageRetention: youtube.averageRetention,
+        retentionDelta: youtube.averageRetentionDelta,
+        topVideoTitle: youtube.topVideos[0]?.title,
+        topVideoViews: youtube.topVideos[0]?.views
+      });
+      const recommendations = this.buildReportRecommendations({
+        youtubeDelta: overview.youtubeViewsDelta,
+        sessionsDelta: overview.webSessionsDelta,
+        averageRetention: youtube.averageRetention,
+        bounceRate: ga4?.bounceRate ?? null,
+        newUsersDelta: ga4?.newUsersDelta ?? null
+      });
+      const nextActions = this.buildReportNextActions(report.type);
 
       const pdfContent = await this.pdfService.render({
         title: "Pulse Analytics Report",
@@ -484,7 +541,10 @@ export class ReportsService implements OnModuleInit, OnModuleDestroy {
           { label: "Average retention", value: `${youtube.averageRetention.toFixed(1)}%` },
           { label: "New users", value: ga4 ? String(ga4.newUsers) : "N/A" }
         ],
-        digest
+        digest,
+        highlights,
+        recommendations,
+        nextActions
       });
 
       const pdfUrl = await this.persistPdf(report.id, pdfContent);
@@ -570,6 +630,7 @@ export class ReportsService implements OnModuleInit, OnModuleDestroy {
     try {
       await this.emailService.sendReportReadyEmail({
         userId: report.userId,
+        recipientEmail: report.user.email,
         reportId: report.id,
         reportType: report.type
       });
@@ -738,6 +799,91 @@ export class ReportsService implements OnModuleInit, OnModuleDestroy {
       youtubeDelta,
       sessionsDelta
     });
+  }
+
+  private buildReportHighlights(input: {
+    youtubeViews: number;
+    youtubeDelta: number;
+    sessions: number;
+    sessionsDelta: number;
+    pulseScore: number;
+    pulseScoreDelta: number;
+    averageRetention: number;
+    retentionDelta: number;
+    topVideoTitle?: string;
+    topVideoViews?: number;
+  }): string[] {
+    const highlights: string[] = [
+      `Pulse Score at ${input.pulseScore} (${this.formatSignedDelta(input.pulseScoreDelta)} vs previous cycle).`,
+      `YouTube reached ${input.youtubeViews} views (${this.formatSignedDelta(input.youtubeDelta)}).`,
+      `Web acquisition delivered ${input.sessions} sessions (${this.formatSignedDelta(input.sessionsDelta)}).`,
+      `Average retention is ${input.averageRetention.toFixed(1)}% (${this.formatSignedDelta(input.retentionDelta)}).`
+    ];
+
+    if (input.topVideoTitle && typeof input.topVideoViews === "number") {
+      highlights.unshift(`Top video: "${input.topVideoTitle}" with ${input.topVideoViews} views.`);
+    }
+
+    return highlights.slice(0, 4);
+  }
+
+  private buildReportRecommendations(input: {
+    youtubeDelta: number;
+    sessionsDelta: number;
+    averageRetention: number;
+    bounceRate: number | null;
+    newUsersDelta: number | null;
+  }): string[] {
+    const recommendations: string[] = [];
+
+    if (input.youtubeDelta < 0) {
+      recommendations.push("Rework publication cadence: test shorter gaps between top-performing formats.");
+    } else {
+      recommendations.push("Scale high-performing video topics and keep publication consistency this week.");
+    }
+
+    if (input.sessionsDelta < 0) {
+      recommendations.push("Strengthen CTA path from videos to landing pages with explicit next-step prompts.");
+    } else {
+      recommendations.push("Duplicate the strongest YouTube-to-site journey in upcoming campaign assets.");
+    }
+
+    if (input.averageRetention < 30) {
+      recommendations.push("Improve first 20 seconds of videos (faster hook, clearer promise, tighter pacing).");
+    } else {
+      recommendations.push("Retention is healthy: prioritize conversion-oriented sections in second half of videos.");
+    }
+
+    if (typeof input.bounceRate === "number" && input.bounceRate > 60) {
+      recommendations.push("Reduce bounce rate by aligning landing-page message with each traffic source intent.");
+    }
+
+    if (typeof input.newUsersDelta === "number" && input.newUsersDelta < 0) {
+      recommendations.push("Launch one discovery-focused content experiment to restore new-user momentum.");
+    }
+
+    return recommendations.slice(0, 5);
+  }
+
+  private buildReportNextActions(type: ReportType): string[] {
+    const cadence = type === ReportType.WEEKLY ? "next 7 days" : "next 30 days";
+    return [
+      `Finalize team priorities for the ${cadence}.`,
+      "Assign one owner per recommendation and define measurable targets.",
+      "Track execution progress mid-cycle and remove blockers quickly.",
+      "Review impact in next report and iterate immediately."
+    ];
+  }
+
+  private formatSignedDelta(value: number): string {
+    const rounded = Number(value.toFixed(1));
+    const sign = rounded > 0 ? "+" : "";
+    return `${sign}${rounded}`;
+  }
+
+  private isMissingFileError(error: unknown): boolean {
+    const nodeError = error as NodeJS.ErrnoException | undefined;
+    return Boolean(nodeError?.code === "ENOENT");
   }
 
   private async ensureDefaultSchedules(workspaceId: string): Promise<void> {

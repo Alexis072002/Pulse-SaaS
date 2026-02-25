@@ -21,6 +21,17 @@ function intensityClass(intensity: number): string {
 }
 
 export function HeatmapCalendar({ cells }: HeatmapCalendarProps): JSX.Element {
+  if (cells.length === 0) {
+    return (
+      <section className="glass rounded-2xl p-5">
+        <h2 className="text-base font-semibold text-text">Heatmap activité (12 mois)</h2>
+        <p className="mt-2 text-sm text-text-2">
+          Données insuffisantes pour afficher la heatmap. Synchronise YouTube ou change de période.
+        </p>
+      </section>
+    );
+  }
+
   const weekCount = Math.ceil(cells.length / 7);
   const dayLabels = ["L", "Ma", "Me", "J", "V", "S", "D"];
 

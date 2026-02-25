@@ -4,9 +4,11 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException
 } from "@nestjs/common";
 import { InvitationStatus, WorkspaceRole } from "@prisma/client";
+import { sendBrevoTransactionalEmail } from "~/common/integrations/brevo";
 import { TokenCryptoService } from "~/common/security/token-crypto.service";
 import { PrismaService } from "~/prisma/prisma.service";
 
@@ -63,6 +65,8 @@ export interface UserWorkspaceItem {
 
 @Injectable()
 export class WorkspaceService {
+  private readonly logger = new Logger(WorkspaceService.name);
+
   constructor(
     private readonly prismaService: PrismaService,
     private readonly tokenCryptoService: TokenCryptoService
@@ -490,6 +494,36 @@ export class WorkspaceService {
       }
     });
 
+    const appUrl = process.env.FRONTEND_APP_URL?.trim() || "http://localhost:3000";
+    const invitationUrl = `${appUrl}/login?invite=${encodeURIComponent(invitation.token)}`;
+    const roleLabel = invitation.role.toLowerCase();
+
+    try {
+      await sendBrevoTransactionalEmail(
+        {
+          to: invitation.email,
+          subject: `Invitation Pulse: accès workspace ${workspaceNameForSubject(context.workspaceName)}`,
+          htmlContent: `
+            <div style="font-family: Inter, Arial, sans-serif; color: #0f172a; line-height: 1.5;">
+              <h2 style="margin:0 0 12px;">Invitation Workspace</h2>
+              <p>Tu as été invité(e) sur le workspace <strong>${escapeHtml(context.workspaceName)}</strong> avec le rôle <strong>${roleLabel}</strong>.</p>
+              <p style="margin:18px 0;">
+                <a href="${invitationUrl}" style="display:inline-block;padding:10px 14px;border-radius:8px;background:#b35c0c;color:#fff;text-decoration:none;font-weight:600;">
+                  Rejoindre le workspace
+                </a>
+              </p>
+              <p style="font-size:12px;color:#64748b;">Cette invitation expire le ${invitation.expiresAt.toISOString().slice(0, 10)}.</p>
+            </div>
+          `,
+          textContent: `Invitation workspace ${context.workspaceName} (${roleLabel}). Ouvrir: ${invitationUrl}`
+        },
+        this.logger
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "unknown invitation email error";
+      this.logger.warn(`Workspace invitation email failed: ${message}`);
+    }
+
     return {
       id: invitation.id,
       email: invitation.email,
@@ -821,4 +855,17 @@ export class WorkspaceService {
   private hashSecret(secret: string): string {
     return createHash("sha256").update(secret).digest("hex");
   }
+}
+
+function workspaceNameForSubject(name: string): string {
+  return name.length > 48 ? `${name.slice(0, 45)}...` : name;
+}
+
+function escapeHtml(input: string): string {
+  return input
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }

@@ -11,6 +11,7 @@ import {
   FileText,
   Globe2,
   Home,
+  Settings,
   Settings2,
   Youtube,
   User2
@@ -114,45 +115,63 @@ export function Sidebar({ workspace }: { workspace: WorkspaceBadgeInfo | null })
         })}
       </nav>
 
-      {/* User section */}
-      <div className={cn("border-t border-border px-3 py-4", sidebarCollapsed && "flex justify-center")}>
-        <div
-          className={cn(
-            "flex items-center gap-3 rounded-xl px-3 py-2.5",
-            sidebarCollapsed && "px-0"
-          )}
-        >
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent/15 text-accent">
-            <User2 size={16} />
-          </div>
-          <AnimatePresence>
-            {!sidebarCollapsed && (
-              <motion.div
-                initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: "auto" }}
-                exit={{ opacity: 0, width: 0 }}
-                transition={{ duration: 0.2 }}
-                className="overflow-hidden"
-              >
-                <p className="truncate text-sm font-medium text-text">{workspace?.name ?? "Workspace"}</p>
-                <p className="truncate text-xs uppercase tracking-[0.08em] text-text-muted">{workspace?.role ?? "viewer"}</p>
-              </motion.div>
+      <div className="px-3 pb-2">
+        <div className="border-t border-border pt-3">
+          <button
+            onClick={toggleSidebar}
+            aria-label={sidebarCollapsed ? "Ouvrir la sidebar" : "Replier la sidebar"}
+            className={cn(
+              "flex h-9 w-full items-center rounded-xl border border-border bg-surface text-xs font-medium text-text-2 transition-colors hover:border-border-2 hover:text-text",
+              sidebarCollapsed ? "justify-center" : "justify-between px-3"
             )}
-          </AnimatePresence>
+          >
+            {!sidebarCollapsed ? <span>Réduire la sidebar</span> : null}
+            {sidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+          </button>
         </div>
       </div>
 
-      {/* Collapse toggle */}
-      <button
-        onClick={toggleSidebar}
-        aria-label={sidebarCollapsed ? "Ouvrir la sidebar" : "Replier la sidebar"}
-        className={cn(
-          "absolute top-1/2 z-50 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-surface text-text-2 shadow-glass transition-all duration-200 hover:border-border-2 hover:bg-surface-hover hover:text-text",
-          sidebarCollapsed ? "right-1" : "right-2"
-        )}
-      >
-        {sidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-      </button>
+      {/* User section */}
+      <div className={cn("border-t border-border px-3 py-4", sidebarCollapsed && "flex justify-center")}>
+        <div className={cn("flex flex-col gap-2", sidebarCollapsed && "items-center")}>
+          <div
+            className={cn(
+              "flex items-center gap-3 rounded-xl px-3 py-2.5",
+              sidebarCollapsed && "px-0"
+            )}
+          >
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent/15 text-accent">
+              <User2 size={16} />
+            </div>
+            <AnimatePresence>
+              {!sidebarCollapsed && (
+                <motion.div
+                  initial={{ opacity: 0, width: 0 }}
+                  animate={{ opacity: 1, width: "auto" }}
+                  exit={{ opacity: 0, width: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <p className="truncate text-sm font-medium text-text">{workspace?.name ?? "Workspace"}</p>
+                  <p className="truncate text-xs uppercase tracking-[0.08em] text-text-muted">{workspace?.role ?? "viewer"}</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <Link
+            href="/settings"
+            title={sidebarCollapsed ? "Paramètres" : undefined}
+            className={cn(
+              "flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2 text-xs font-medium text-text-2 transition-colors hover:border-border-2 hover:text-text",
+              sidebarCollapsed && "justify-center px-0"
+            )}
+          >
+            <Settings size={14} className="shrink-0 text-accent" />
+            {!sidebarCollapsed ? <span>Paramètres</span> : null}
+          </Link>
+        </div>
+      </div>
     </aside>
   );
 }

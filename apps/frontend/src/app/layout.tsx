@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Manrope, JetBrains_Mono } from "next/font/google";
 import type { ReactNode } from "react";
+import { DemoProjectBanner } from "@/components/layout/DemoProjectBanner";
 import { ThemeBootstrapper } from "@/components/layout/ThemeBootstrapper";
 import { TrpcProvider } from "@/lib/trpc/provider";
 import "@/app/globals.css";
 
-const inter = Inter({
+const manrope = Manrope({
   subsets: ["latin"],
   variable: "--font-inter",
   weight: ["300", "400", "500", "600", "700", "800"]
@@ -30,7 +31,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }): JSX.Element {
   return (
     <html lang="fr" data-theme="dark" suppressHydrationWarning>
-      <body className={`${inter.variable} ${jetbrains.variable} font-sans antialiased`}>
+      <body className={`${manrope.variable} ${jetbrains.variable} font-sans antialiased`}>
         <TrpcProvider>
           <ThemeBootstrapper />
           <div className="mesh-gradient">
@@ -39,6 +40,7 @@ export default function RootLayout({ children }: { children: ReactNode }): JSX.E
           <div className="relative z-10">
             {children}
           </div>
+          <DemoProjectBanner />
         </TrpcProvider>
       </body>
     </html>

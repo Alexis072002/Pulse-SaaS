@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { CalendarClock, CheckCircle2, Clock3, FileText, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { PageWrapper } from "@/components/layout/PageWrapper";
-import { GenerateReportButtons, ReportRowActions, ReportScheduleControls } from "@/features/reports";
+import { GenerateReportButtons, ReportRowActions, ReportsAutoRefresh, ReportScheduleControls } from "@/features/reports";
 import {
   getReportSchedules,
   getReports,
@@ -31,6 +31,7 @@ const REPORT_STATUSES: Array<{ label: string; value?: ReportStatus }> = [
   { label: "Done", value: "DONE" },
   { label: "Failed", value: "FAILED" }
 ];
+const REPORTS_PAGE_SIZE = 10;
 
 function statusTone(status: ReportStatus): "neutral" | "positive" | "negative" | "accent" {
   if (status === "DONE") {
@@ -70,13 +71,16 @@ function toFrenchType(type: ReportType): string {
   return type === "WEEKLY" ? "Hebdo" : "Mensuel";
 }
 
-function withFilters(type: ReportType | undefined, status: ReportStatus | undefined): string {
+function withFilters(type: ReportType | undefined, status: ReportStatus | undefined, page?: number): string {
   const params = new URLSearchParams();
   if (type) {
     params.set("type", type);
   }
   if (status) {
     params.set("status", status);
+  }
+  if (page && page > 1) {
+    params.set("page", String(page));
   }
   const query = params.toString();
   return `/reports${query ? `?${query}` : ""}`;
@@ -85,10 +89,12 @@ function withFilters(type: ReportType | undefined, status: ReportStatus | undefi
 export default async function ReportsPage({
   searchParams
 }: {
-  searchParams?: { type?: string; status?: string };
+  searchParams?: { type?: string; status?: string; page?: string };
 }): Promise<JSX.Element> {
   const selectedType = parseReportType(searchParams?.type);
   const selectedStatus = parseReportStatus(searchParams?.status);
+  const requestedPage = Number(searchParams?.page ?? "1");
+  const basePage = Number.isFinite(requestedPage) && requestedPage > 0 ? Math.floor(requestedPage) : 1;
 
   let reports: ReportItem[];
   let schedules: ReportSchedule[];
@@ -111,9 +117,17 @@ export default async function ReportsPage({
   const processingCount = countByStatus(reports, "PROCESSING");
   const doneCount = countByStatus(reports, "DONE");
   const failedCount = countByStatus(reports, "FAILED");
+  const totalPages = Math.max(1, Math.ceil(reports.length / REPORTS_PAGE_SIZE));
+  const currentPage = Math.min(basePage, totalPages);
+  const pageStart = (currentPage - 1) * REPORTS_PAGE_SIZE;
+  const visibleReports = reports.slice(pageStart, pageStart + REPORTS_PAGE_SIZE);
+  const hasInFlightReports = reports.some(
+    (report) => report.status === "PENDING" || report.status === "PROCESSING"
+  );
 
   return (
     <PageWrapper title="Rapports">
+      <ReportsAutoRefresh enabled={hasInFlightReports} />
       <section className="glass rounded-2xl p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -130,7 +144,7 @@ export default async function ReportsPage({
           {REPORT_TYPES.map((option) => (
             <Link
               key={`type-${option.value ?? "ALL"}`}
-              href={withFilters(option.value, selectedStatus) as Route}
+              href={withFilters(option.value, selectedStatus, 1) as Route}
               className={cn(
                 "rounded-full border px-4 py-1.5 text-xs font-semibold tracking-wide transition-all duration-200",
                 option.value === selectedType || (!option.value && !selectedType)
@@ -147,7 +161,7 @@ export default async function ReportsPage({
           {REPORT_STATUSES.map((option) => (
             <Link
               key={`status-${option.value ?? "ALL"}`}
-              href={withFilters(selectedType, option.value) as Route}
+              href={withFilters(selectedType, option.value, 1) as Route}
               className={cn(
                 "rounded-full border px-4 py-1.5 text-xs font-semibold tracking-wide transition-all duration-200",
                 option.value === selectedStatus || (!option.value && !selectedStatus)
@@ -236,7 +250,7 @@ export default async function ReportsPage({
                   </td>
                 </tr>
               ) : (
-                reports.map((report) => (
+                visibleReports.map((report) => (
                   <tr key={report.id} className="border-b border-border/50 last:border-0">
                     <td className="px-4 py-3 align-top">
                       <p className="text-sm font-medium text-text">
@@ -288,6 +302,38 @@ export default async function ReportsPage({
               )}
             </tbody>
           </table>
+        </div>
+      </section>
+
+      <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface/70 px-4 py-3">
+        <p className="text-xs text-text-2">
+          Page {currentPage}/{totalPages} · {reports.length} rapport(s) au total
+        </p>
+        <div className="flex items-center gap-2">
+          <Link
+            href={withFilters(selectedType, selectedStatus, Math.max(1, currentPage - 1)) as Route}
+            aria-disabled={currentPage <= 1}
+            className={cn(
+              "rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors",
+              currentPage <= 1
+                ? "pointer-events-none border-border text-text-muted opacity-50"
+                : "border-border bg-surface text-text-2 hover:border-border-2 hover:text-text"
+            )}
+          >
+            Précédent
+          </Link>
+          <Link
+            href={withFilters(selectedType, selectedStatus, Math.min(totalPages, currentPage + 1)) as Route}
+            aria-disabled={currentPage >= totalPages}
+            className={cn(
+              "rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors",
+              currentPage >= totalPages
+                ? "pointer-events-none border-border text-text-muted opacity-50"
+                : "border-border bg-surface text-text-2 hover:border-border-2 hover:text-text"
+            )}
+          >
+            Suivant
+          </Link>
         </div>
       </section>
     </PageWrapper>
